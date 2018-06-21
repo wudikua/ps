@@ -1,0 +1,55 @@
+syntax = "proto3";
+option java_package = "net";
+option java_outer_classname = "Ps";
+option java_multiple_files = true;
+
+service PS {
+    rpc get (GetMessage) returns (GetMessage) {}
+    rpc upsert (UpdateMessage) returns (UpdateMessage) {}
+    rpc push (GradientMessage) returns (GradientMessage) {}
+    rpc barrier(BarrierMessage) returns (BarrierMessage) {}
+}
+
+message Matrix {
+    string key = 1;
+    int32 row = 2;
+    int32 cols = 3;
+    repeated float data = 4;
+    // 是否覆盖
+    bool replace = 5;
+}
+
+message Resp {
+    int32 ec = 1;
+    string em = 2;
+}
+
+message RequestMeta {
+    string host = 1;
+}
+
+message GetMessage {
+    RequestMeta meta = 1;
+    Matrix weights = 2;
+    Resp resp = 3;
+}
+
+message UpdateMessage {
+    RequestMeta meta = 1;
+    Matrix  weights = 2;
+    Resp resp = 3;
+    bool replace = 4;
+}
+
+message GradientMessage {
+    RequestMeta meta = 1;
+    Matrix  gradient = 2;
+    Resp resp = 3;
+    string updaterKey = 4;
+}
+
+message BarrierMessage {
+    RequestMeta meta = 1;
+    Resp resp = 2;
+}
+
