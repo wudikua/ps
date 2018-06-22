@@ -18,7 +18,7 @@ message Matrix {
     int32 cols = 3;
     repeated float data = 4;
     // 是否覆盖
-    bool replace = 5;
+    bool update = 5;
 }
 
 message Resp {

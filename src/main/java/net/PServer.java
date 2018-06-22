@@ -99,14 +99,39 @@ public class PServer implements net.PSGrpc.PS, Runnable {
 		responseObserver.onCompleted();
 	}
 
+	@Override
+	public void getList(GetListMessage request, StreamObserver<GetListMessage> responseObserver) {
+		GetListMessage.Builder resp = GetListMessage.newBuilder();
+		for (int i=0; i<request.getWeightsCount(); i++) {
+			FloatMatrix result = store.get(request.getWeights(i).getKey());
+			Matrix.Builder m = Matrix.newBuilder().setKey(request.getWeights(i).getKey());
+			if (result == null) {
+				// add empty weights when null
+				resp.addWeights(m);
+				continue;
+			}
+			float[] data = result.data;
+			for (int j=0; j<result.data.length; j++) {
+				m.addData(data[j]);
+			}
+			m.setRow(result.rows);
+			m.setCols(result.columns);
+			resp.addWeights(m);
+		}
+		resp.setResp(success).build();
+		responseObserver.onNext(resp.build());
+		responseObserver.onCompleted();
+	}
+
 	public void upsert(UpdateMessage request, StreamObserver<UpdateMessage> responseObserver) {
 		if (!request.getWeights().getKey().contains("emF")) {
 			logger.info("insert {}", request.getWeights().getKey());
 		}
-		Matrix.Builder m = Matrix.newBuilder().setKey(request.getWeights().getKey());
+		Matrix.Builder m = Matrix.newBuilder().setUpdate(true).setKey(request.getWeights().getKey());
 		UpdateMessage.Builder resp = UpdateMessage.newBuilder().setResp(success);
 		FloatMatrix exists = store.get(request.getWeights().getKey());
-		if (exists == null || request.getWeights().getReplace()) {
+		if (exists == null || request.getReplace()) {
+			m.setUpdate(false);
 			float[] data = new float[request.getWeights().getDataList().size()];
 			for (int i=0;i<data.length;i++) {
 				data[i] = request.getWeights().getData(i);
@@ -129,6 +154,38 @@ public class PServer implements net.PSGrpc.PS, Runnable {
 		m.setRow(exists.rows);
 		m.setCols(exists.columns);
 		resp.setWeights(m.build());
+		responseObserver.onNext(resp.build());
+		responseObserver.onCompleted();
+	}
+
+	@Override
+	public void upsertList(UpdateListMessage request, StreamObserver<UpdateListMessage> responseObserver) {
+		UpdateListMessage.Builder resp = UpdateListMessage.newBuilder();
+		for (int i=0; i<request.getWeightsCount(); i++) {
+			Matrix.Builder m = Matrix.newBuilder().setUpdate(true).setKey(request.getWeights(i).getKey());
+			FloatMatrix exists = store.get(request.getWeights(i).getKey());
+			if (exists == null || request.getReplace()) {
+				m.setUpdate(false);
+				float[] data = new float[request.getWeights(i).getDataList().size()];
+				for (int j=0;j<data.length;j++) {
+					data[j] = request.getWeights(i).getData(j);
+				}
+				exists = new FloatMatrix();
+				exists.data = data;
+				exists.rows = request.getWeights(i).getRow();
+				exists.columns = request.getWeights(i).getCols();
+				exists.length = exists.rows * exists.columns;
+				store.put(request.getWeights(i).getKey(), exists);
+			}
+			float[] data = exists.data;
+			for (int j=0; j<data.length; j++) {
+				m.addData(data[i]);
+			}
+			m.setRow(exists.rows);
+			m.setCols(exists.columns);
+			resp.addWeights(m);
+		}
+		resp.setResp(success).build();
 		responseObserver.onNext(resp.build());
 		responseObserver.onCompleted();
 	}

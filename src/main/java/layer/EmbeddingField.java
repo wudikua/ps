@@ -53,17 +53,22 @@ public class EmbeddingField {
 		}
 	}
 
+	// 提前获取参数
+	public void preForward(float[] nSample) {
+		for (int i = 0; i < nSample.length; i++) {
+			float sample = nSample[i];
+			String key = this.name + "." + String.valueOf(sample);
+			kvStore.asyncGet(key, initW);
+		}
+		kvStore.asyncWait();
+	}
+
 	public FloatMatrix forward(float[] nSample) {
 		this.nSample = nSample;
 		FloatMatrix WX = new FloatMatrix(outputDims, nSample.length);
 		// 分布式批量获取权重
 		if (Context.isDistributed()) {
-			List<String> keys = Lists.newArrayList();
-			for (int i = 0; i < nSample.length; i++) {
-				float sample = nSample[i];
-				String key = this.name + "." + String.valueOf(sample);
-				keys.add(key);
-			}
+
 			// @TODO 批量获取权重
 		}
 		for (int i = 0; i < nSample.length; i++) {

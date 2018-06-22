@@ -36,8 +36,8 @@ public class Main {
 			server.start();
 			System.exit(0);
 		}
-		BufferedReader train = new BufferedReader(new FileReader(new File(System.getProperty("context", "/Users/mengjun/dev/ps/src/main/resources/train.txt"))));
-		BufferedReader test = new BufferedReader(new FileReader(new File(System.getProperty("test", "/Users/mengjun/dev/ps/src/main/resources/test.txt"))));
+		BufferedReader train = new BufferedReader(new FileReader(new File(System.getProperty("context", "C:/Users/Administrator/Desktop/ps/src/main/resources/train.txt"))));
+		BufferedReader test = new BufferedReader(new FileReader(new File(System.getProperty("test", "C:/Users/Administrator/Desktop/ps/src/main/resources/test.txt"))));
 		Trainer trainer = new Trainer(Context.thread, new Callable<Model>() {
 			@Override
 			public Model call() throws Exception {
@@ -51,7 +51,7 @@ public class Main {
 			while (!Context.finish && !eof) {
 				List<TestDataSet.MatrixData> dataList = Lists.newArrayList();
 				for (int i=0; i<Context.thread; i++) {
-					Pair<TestDataSet.MatrixData, Boolean> d = TestDataSet.fromStream(train, Integer.parseInt(System.getProperty("batch", "5000")));
+					Pair<TestDataSet.MatrixData, Boolean> d = TestDataSet.fromStream(train, Integer.parseInt(System.getProperty("batch", "10")));
 					if (!d.getValue()) {
 						logger.info("data read eof");
 						eof = true;
@@ -80,8 +80,8 @@ public class Main {
 			}
 			AUC auc = new AUC(data);
 			logger.info("AUC {}", auc.calculate());
-			train = new BufferedReader(new FileReader(new File(System.getProperty("context", "/Users/mengjun/dev/ps/src/main/resources/train.txt"))));
-			test = new BufferedReader(new FileReader(new File(System.getProperty("test", "/Users/mengjun/dev/ps/src/main/resources/test.txt"))));
+			train = new BufferedReader(new FileReader(new File(System.getProperty("context", "C:/Users/Administrator/Desktop/ps/src/main/resources/train.txt"))));
+			test = new BufferedReader(new FileReader(new File(System.getProperty("test", "C:/Users/Administrator/Desktop/ps/src/main/resources/test.txt"))));
 		}
 	}
 }

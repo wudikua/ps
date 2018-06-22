@@ -5,6 +5,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.SettableFuture;
@@ -26,7 +27,7 @@ import java.util.function.Supplier;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
-public class KVStore {
+public class KVStore implements Runnable {
 
 	private static Logger logger = LoggerFactory.getLogger(KVStore.class);
 
@@ -39,7 +40,7 @@ public class KVStore {
 	private ThreadLocal<PSClient> client;
 
 	// 异步初始化一批权重
-	private Set<MyKey> asyncGet = Sets.newConcurrentHashSet();
+	private Map<String, Callable<FloatMatrix>> asyncGet = Maps.newConcurrentMap();
 
 	private Map<String, FloatMatrix> sum = Maps.newConcurrentMap();
 	private Map<String, AtomicLong> sumCnt = Maps.newConcurrentMap();
@@ -52,6 +53,7 @@ public class KVStore {
 					return new PSClient();
 				}
 			});
+			Executors.newSingleThreadExecutor().submit(this);
 		}
 	}
 
@@ -59,9 +61,56 @@ public class KVStore {
 		return ins;
 	}
 
-	public FloatMatrix getList(List<MyKey> keys) {
-		// @TODO 调用底层批量获取
-		return null;
+	public void batchGetKeys() {
+		if (asyncGet.isEmpty()) {
+			return;
+		}
+		List<String> keys = Lists.newArrayList();
+		for (String key : asyncGet.keySet()) {
+			if (!store.containsKey(key)) {
+				keys.add(key);
+			}
+		}
+		Map<String, FloatMatrix> getResult = client.get().getList(keys);
+		Map<String, FloatMatrix> update = Maps.newHashMap();
+		for (String key : getResult.keySet()) {
+			if (getResult.get(key) == null) {
+				try {
+					update.put(key, asyncGet.get(key).call());
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			} else {
+				store.put(key, getResult.get(key));
+			}
+		}
+		Map<String, FloatMatrix> updateResult = client.get().updateList(update, false);
+		for (String key : getResult.keySet()) {
+			if (!store.containsKey(key) && updateResult.get(key) != null) {
+				store.put(key, updateResult.get(key));
+			}
+		}
+		asyncGet.clear();
+	}
+
+	public synchronized void asyncGet(String key, Callable<FloatMatrix> init) {
+		asyncGet.put(key, init);
+	}
+
+	public void asyncWait() {
+		synchronized (this) {
+			logger.info("notify fetcher thread");
+			this.notifyAll();
+		}
+		while(asyncGet.size() != 0) {
+			synchronized (asyncGet) {
+				try {
+					asyncGet.wait(300);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+		}
 	}
 
 	public FloatMatrix get(String key) {
@@ -176,6 +225,28 @@ public class KVStore {
 		if (Context.isDistributed() && !Context.isPServer()) {
 			logger.info("clear worker cache weights");
 			store.clear();
+		}
+	}
+
+	@Override
+	public void run() {
+		while(true) {
+			logger.info("start async weights fetch thread");
+			synchronized (this) {
+				// 与单取参数用一把锁
+				try {
+					logger.info("wait for notify");
+					this.wait();
+					logger.info("start batch request keys");
+					batchGetKeys();
+					logger.info("end batch request keys");
+					synchronized (asyncGet) {
+						asyncGet.notifyAll();
+					}
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
 		}
 	}
 }

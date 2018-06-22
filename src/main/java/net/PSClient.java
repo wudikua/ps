@@ -1,5 +1,6 @@
 package net;
 
+import com.google.common.collect.Maps;
 import context.Context;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -10,6 +11,8 @@ import org.slf4j.LoggerFactory;
 import store.MyKey;
 
 import javax.sound.midi.MetaMessage;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -48,10 +51,9 @@ public class PSClient {
 				}
 				return null;
 			}
-			float[] data = new float[result.getWeights().getDataList().size()];
-			int i=0;
-			for (Float f : result.getWeights().getDataList()) {
-				data[i++] = f;
+			float[] data = new float[result.getWeights().getDataCount()];
+			for (int i=0; i<result.getWeights().getDataCount(); i++) {
+				data[i] = result.getWeights().getData(i);
 			}
 			FloatMatrix tmp = new FloatMatrix();
 			tmp.data = data;
@@ -70,9 +72,44 @@ public class PSClient {
 		return null;
 	}
 
+	public Map<String, FloatMatrix> getList(List<String> keys) {
+		Map<String, FloatMatrix> result = Maps.newHashMap();
+		GetListMessage.Builder request = GetListMessage.newBuilder();
+		for (String key : keys) {
+			request.addWeights(Matrix.newBuilder().setKey(key));
+		}
+		try {
+			GetListMessage resp = stub.getList(request.build()).get();
+			if (resp.getResp().getEc() != 200) {
+				return null;
+			}
+			for (int i=0; i<resp.getWeightsCount(); i++) {
+				if (resp.getWeights(i).getDataCount() == 0) {
+					result.put(resp.getWeights(i).getKey(), null);
+					continue;
+				}
+				float[] data = new float[resp.getWeights(i).getDataCount()];
+				for (int j=0; j<resp.getWeights(i).getDataCount(); j++) {
+					data[j] = resp.getWeights(i).getData(j);
+				}
+				FloatMatrix tmp = new FloatMatrix();
+				tmp.data = data;
+				tmp.rows = resp.getWeights(i).getRow();
+				tmp.columns = resp.getWeights(i).getCols();
+				tmp.length = tmp.rows * tmp.columns;
+				result.put(resp.getWeights(i).getKey(), tmp);
+			}
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		} catch (ExecutionException e) {
+			e.printStackTrace();
+		}
+		return result;
+	}
+
 	// 更新matrix到参数服务器 replace为false 重复key不替换
 	public FloatMatrix update(String key, FloatMatrix weights, boolean replace) {
-		Matrix.Builder matrixBuilder = Matrix.newBuilder().setKey(key).setReplace(replace);
+		Matrix.Builder matrixBuilder = Matrix.newBuilder().setKey(key);
 		matrixBuilder.setRow(weights.rows);
 		matrixBuilder.setCols(weights.columns);
 		for (int i=0; i<weights.data.length; i++) {
@@ -81,17 +118,18 @@ public class PSClient {
 		try {
 			UpdateMessage result = stub.upsert(UpdateMessage.newBuilder()
 					.setMeta(RequestMeta.newBuilder().setHost(Context.host).build())
+					.setReplace(replace)
 					.setWeights(matrixBuilder).build()).get();
 			if (result.getResp().getEc() != 200) {
 				logger.info("get error {}", result.getResp().getEm());
 				return null;
 			}
-			if (result.getReplace()) {
+			if (!result.getWeights().getUpdate()) {
 				// 成功替换
 				return weights;
 			}
 			// 没有替换，获取到新的weights
-			float[] data = new float[result.getWeights().getDataList().size()];
+			float[] data = new float[result.getWeights().getDataCount()];
 			for (int i=0; i<result.getWeights().getDataCount(); i++) {
 				data[i] = result.getWeights().getData(i);
 			}
@@ -110,6 +148,45 @@ public class PSClient {
 			e.printStackTrace();
 		}
 		return null;
+	}
+
+	public Map<String, FloatMatrix> updateList(Map<String, FloatMatrix> updates, boolean replace) {
+		UpdateListMessage.Builder request = UpdateListMessage.newBuilder().setReplace(replace);
+		for (String key : updates.keySet()) {
+			FloatMatrix weights = updates.get(key);
+			Matrix.Builder matrixBuilder = Matrix.newBuilder().setKey(key);
+			matrixBuilder.setRow(weights.rows);
+			matrixBuilder.setCols(weights.columns);
+			for (int i=0; i<weights.data.length; i++) {
+				matrixBuilder.addData(weights.data[i]);
+			}
+			request.addWeights(matrixBuilder);
+		}
+		try {
+			UpdateListMessage resp = stub.upsertList(request.build()).get();
+			for (int i=0; i<resp.getWeightsCount(); i++) {
+				Matrix m = resp.getWeights(i);
+				if (!m.getUpdate()) {
+					continue;
+				}
+				// 没有替换，获取到新的weights
+				float[] data = new float[m.getDataCount()];
+				for (int j=0; j<m.getDataCount(); j++) {
+					data[j] = m.getData(j);
+				}
+				FloatMatrix tmp = new FloatMatrix();
+				tmp.data = data;
+				tmp.rows = m.getRow();
+				tmp.columns = m.getCols();
+				tmp.length = tmp.rows * tmp.columns;
+				updates.put(m.getKey(), tmp);
+			}
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		} catch (ExecutionException e) {
+			e.printStackTrace();
+		}
+		return updates;
 	}
 
 	// 推送梯度

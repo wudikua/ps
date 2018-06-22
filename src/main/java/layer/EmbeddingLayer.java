@@ -3,6 +3,7 @@ package layer;
 import activations.Relu;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import context.Context;
 import lombok.Data;
 import org.jblas.FloatMatrix;
 import store.KVStore;
@@ -23,6 +24,13 @@ public class EmbeddingLayer extends Layer {
 	public FloatMatrix forward() {
 		FloatMatrix E = pre.A;
 		float[][] EX = new float[embeddingFields.get(0).getOutputDims() * embeddingFields.size()][E.columns];
+		// 分布式worker 预处理权重
+		if (Context.isDistributed() && !Context.isPServer()) {
+			for (int i = 0; i < embeddingFields.size(); i++) {
+				EmbeddingField layer = embeddingFields.get(i);
+				layer.preForward(E.getRow(i).toArray());
+			}
+		}
 		// 对每个域做embedding
 		for (int i=0; i< embeddingFields.size(); i++) {
 			EmbeddingField layer = embeddingFields.get(i);
