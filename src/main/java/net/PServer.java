@@ -1,13 +1,10 @@
 package net;
 
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Multimap;
 import context.Context;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
-import javafx.scene.effect.FloatMap;
 import lombok.Data;
 import org.jblas.FloatMatrix;
 import org.slf4j.Logger;
@@ -19,10 +16,9 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.LockSupport;
 
 @Data
-public class PServer implements PSGrpc.PS, Runnable {
+public class PServer implements net.PSGrpc.PS, Runnable {
 
 	static Logger logger = LoggerFactory.getLogger(PServer.class);
 
@@ -51,7 +47,7 @@ public class PServer implements PSGrpc.PS, Runnable {
 	}
 
 	public PServer(int port, int workerNum) {
-		server = ServerBuilder.forPort(port).addService(PSGrpc.bindService(this)).build();
+		server = ServerBuilder.forPort(port).addService(net.PSGrpc.bindService(this)).build();
 		store = KVStore.ins();
 		this.workerNum = workerNum;
 		updateThread.execute(this);
@@ -74,7 +70,6 @@ public class PServer implements PSGrpc.PS, Runnable {
 		server.shutdown();
 	}
 
-	@Override
 	public void get(GetMessage request, StreamObserver<GetMessage> responseObserver) {
 		if (!request.getWeights().getKey().contains("emF")) {
 			logger.info("request {}", request.getWeights().getKey());
@@ -104,7 +99,6 @@ public class PServer implements PSGrpc.PS, Runnable {
 		responseObserver.onCompleted();
 	}
 
-	@Override
 	public void upsert(UpdateMessage request, StreamObserver<UpdateMessage> responseObserver) {
 		if (!request.getWeights().getKey().contains("emF")) {
 			logger.info("insert {}", request.getWeights().getKey());
@@ -139,7 +133,6 @@ public class PServer implements PSGrpc.PS, Runnable {
 		responseObserver.onCompleted();
 	}
 
-	@Override
 	public void push(GradientMessage request, StreamObserver<GradientMessage> responseObserver) {
 		if (!request.getGradient().getKey().contains("emF")) {
 			logger.info("update {}", request.getGradient().getKey());
@@ -197,7 +190,6 @@ public class PServer implements PSGrpc.PS, Runnable {
 		}
 	}
 
-	@Override
 	public void barrier(BarrierMessage request, StreamObserver<BarrierMessage> responseObserver) {
 		long step = globalStep.get();
 		long wStep = workerStep.incrementAndGet();
