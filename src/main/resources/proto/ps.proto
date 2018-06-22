@@ -5,7 +5,9 @@ option java_multiple_files = true;
 
 service PS {
     rpc get (GetMessage) returns (GetMessage) {}
+    rpc getList (GetListMessage) returns (GetListMessage) {}
     rpc upsert (UpdateMessage) returns (UpdateMessage) {}
+    rpc upsertList (UpdateListMessage) returns (UpdateListMessage) {}
     rpc push (GradientMessage) returns (GradientMessage) {}
     rpc barrier(BarrierMessage) returns (BarrierMessage) {}
 }
@@ -28,6 +30,12 @@ message RequestMeta {
     string host = 1;
 }
 
+message GetListMessage {
+    RequestMeta meta = 1;
+    repeated Matrix weights = 2;
+    Resp resp = 3;
+}
+
 message GetMessage {
     RequestMeta meta = 1;
     Matrix weights = 2;
@@ -37,6 +45,13 @@ message GetMessage {
 message UpdateMessage {
     RequestMeta meta = 1;
     Matrix  weights = 2;
+    Resp resp = 3;
+    bool replace = 4;
+}
+
+message UpdateListMessage {
+    RequestMeta meta = 1;
+    repeated Matrix  weights = 2;
     Resp resp = 3;
     bool replace = 4;
 }

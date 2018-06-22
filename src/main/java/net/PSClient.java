@@ -7,6 +7,7 @@ import lombok.Data;
 import org.jblas.FloatMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import store.MyKey;
 
 import javax.sound.midi.MetaMessage;
 import java.util.concurrent.ExecutionException;

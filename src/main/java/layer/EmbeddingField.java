@@ -1,8 +1,13 @@
 package layer;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
+import com.google.common.collect.Lists;
+import context.Context;
 import org.jblas.FloatMatrix;
 import org.jblas.JavaBlas;
 
@@ -51,11 +56,21 @@ public class EmbeddingField {
 	public FloatMatrix forward(float[] nSample) {
 		this.nSample = nSample;
 		FloatMatrix WX = new FloatMatrix(outputDims, nSample.length);
-		for (int i =0; i<nSample.length; i++) {
+		// 分布式批量获取权重
+		if (Context.isDistributed()) {
+			List<String> keys = Lists.newArrayList();
+			for (int i = 0; i < nSample.length; i++) {
+				float sample = nSample[i];
+				String key = this.name + "." + String.valueOf(sample);
+				keys.add(key);
+			}
+			// @TODO 批量获取权重
+		}
+		for (int i = 0; i < nSample.length; i++) {
 			float sample = nSample[i];
 			String key = this.name + "." + String.valueOf(sample);
 			checkExists(key);
-			JavaBlas.rcopy(weights.get(key).length, weights.get(key).data, 0, 1, WX.data, i*outputDims, 1);
+			JavaBlas.rcopy(weights.get(key).length, weights.get(key).data, 0, 1, WX.data, i * outputDims, 1);
 		}
 		Z = WX;
 		A = activation.forward(Z);

@@ -1,18 +1,30 @@
 package store;
 
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.SettableFuture;
 import context.Context;
+import lombok.Data;
 import net.PSClient;
 import org.jblas.FloatMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import update.Updater;
 
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
+import java.util.Set;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Condition;
 import java.util.function.Supplier;
+import org.apache.commons.lang3.tuple.MutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 
 public class KVStore {
 
@@ -25,6 +37,9 @@ public class KVStore {
 
 	// PS架构使用
 	private ThreadLocal<PSClient> client;
+
+	// 异步初始化一批权重
+	private Set<MyKey> asyncGet = Sets.newConcurrentHashSet();
 
 	private Map<String, FloatMatrix> sum = Maps.newConcurrentMap();
 	private Map<String, AtomicLong> sumCnt = Maps.newConcurrentMap();
@@ -42,6 +57,11 @@ public class KVStore {
 
 	public static KVStore ins() {
 		return ins;
+	}
+
+	public FloatMatrix getList(List<MyKey> keys) {
+		// @TODO 调用底层批量获取
+		return null;
 	}
 
 	public FloatMatrix get(String key) {
