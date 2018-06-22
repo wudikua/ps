@@ -25,13 +25,12 @@ public class Main {
 
 	private static Logger logger = LoggerFactory.getLogger(Main.class);
 
-	static int thread = Integer.parseInt(System.getProperty("thread", String.valueOf(Runtime.getRuntime().availableProcessors())));
 
 	public static void main(String args[]) throws Exception {
 		Context.init();
 		if (Context.isPServer()) {
 			// 启动PS进程
-			Updater updater = new AdamUpdater(0.01, 0.9, 0.999, Math.pow(10, -8));
+			Updater updater = new AdamUpdater(0.001, 0.9, 0.999, Math.pow(10, -8));
 			PServer server = new PServer(Context.psPort, Context.workerNum);
 			server.getUpdaterMap().put(updater.getName(), updater);
 			server.start();
@@ -39,7 +38,7 @@ public class Main {
 		}
 		BufferedReader train = new BufferedReader(new FileReader(new File(System.getProperty("context", "/Users/mengjun/dev/ps/src/main/resources/train.txt"))));
 		BufferedReader test = new BufferedReader(new FileReader(new File(System.getProperty("test", "/Users/mengjun/dev/ps/src/main/resources/test.txt"))));
-		Trainer trainer = new Trainer(thread, new Callable<Model>() {
+		Trainer trainer = new Trainer(Context.thread, new Callable<Model>() {
 			@Override
 			public Model call() throws Exception {
 				return DNN.buildModel(23, 10, 45, new int[]{1000, 100, 1});
@@ -51,7 +50,7 @@ public class Main {
 			boolean eof = false;
 			while (!Context.finish && !eof) {
 				List<TestDataSet.MatrixData> dataList = Lists.newArrayList();
-				for (int i=0; i<thread; i++) {
+				for (int i=0; i<Context.thread; i++) {
 					Pair<TestDataSet.MatrixData, Boolean> d = TestDataSet.fromStream(train, Integer.parseInt(System.getProperty("batch", "5000")));
 					if (!d.getValue()) {
 						logger.info("data read eof");

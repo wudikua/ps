@@ -39,10 +39,12 @@ public class PSClient {
 		Matrix matrix = Matrix.newBuilder().setKey(key).build();
 		try {
 			GetMessage result = stub.get(GetMessage.newBuilder()
-					.setMeta(RequestMeta.newBuilder().setHost("localhost").build())
+					.setMeta(RequestMeta.newBuilder().setHost(Context.host).build())
 					.setWeights(matrix).build()).get();
 			if (result.getResp().getEc() != 200) {
-				logger.info("get error {} key:{}", result.getResp().getEm(), key);
+				if (result.getResp().getEc() != 204) {
+					logger.info("get error {} key:{}", result.getResp().getEm(), key);
+				}
 				return null;
 			}
 			float[] data = new float[result.getWeights().getDataList().size()];

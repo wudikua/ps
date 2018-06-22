@@ -77,7 +77,7 @@ public class PServer implements net.PSGrpc.PS, Runnable {
 		Matrix.Builder m = Matrix.newBuilder().setKey(request.getWeights().getKey());
 		FloatMatrix result = store.get(m.getKey());
 		if (result == null) {
-			GetMessage resp = GetMessage.newBuilder().setResp(error(200, "null weights")).build();
+			GetMessage resp = GetMessage.newBuilder().setResp(error(204, "null weights")).build();
 			responseObserver.onNext(resp);
 			responseObserver.onCompleted();
 			return;

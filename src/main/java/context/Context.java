@@ -29,6 +29,9 @@ public class Context {
 
 	public static volatile int workerNum;
 
+	public static int thread;
+
+
 	public static volatile int psPort;
 
 	public static volatile String psHost;
@@ -52,6 +55,7 @@ public class Context {
 		nTermDump = 100;
 		finish = false;
 		dump = false;
+		thread = Integer.parseInt(System.getProperty("thread", String.valueOf(Runtime.getRuntime().availableProcessors())));
 		isPs = "1".equals(System.getProperty("ps", "0"));
 		workerNum = Integer.parseInt((System.getProperty("workerNum", "1")));
 		psPort = Integer.parseInt((System.getProperty("psPort", "8890")));
