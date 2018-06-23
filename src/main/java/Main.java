@@ -51,7 +51,7 @@ public class Main {
 			while (!Context.finish && !eof) {
 				List<TestDataSet.MatrixData> dataList = Lists.newArrayList();
 				for (int i=0; i<Context.thread; i++) {
-					Pair<TestDataSet.MatrixData, Boolean> d = TestDataSet.fromStream(train, Integer.parseInt(System.getProperty("batch", "10")));
+					Pair<TestDataSet.MatrixData, Boolean> d = TestDataSet.fromStream(train, Integer.parseInt(System.getProperty("batch", "100")));
 					if (!d.getValue()) {
 						logger.info("data read eof");
 						eof = true;

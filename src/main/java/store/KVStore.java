@@ -62,7 +62,9 @@ public class KVStore implements Runnable {
 	}
 
 	public void batchGetKeys() {
+	    logger.debug("batch get keys start");
 		if (asyncGet.isEmpty()) {
+		    logger.debug("async get map is empty");
 			return;
 		}
 		List<String> keys = Lists.newArrayList();
@@ -91,6 +93,7 @@ public class KVStore implements Runnable {
 			}
 		}
 		asyncGet.clear();
+        logger.debug("batch get keys end");
 	}
 
 	public synchronized void asyncGet(String key, Callable<FloatMatrix> init) {
@@ -98,10 +101,9 @@ public class KVStore implements Runnable {
 	}
 
 	public void asyncWait() {
-		synchronized (this) {
-			logger.info("notify fetcher thread");
-			this.notifyAll();
-		}
+	    synchronized (this) {
+	        notifyAll();
+        }
 		while(asyncGet.size() != 0) {
 			synchronized (asyncGet) {
 				try {
@@ -111,6 +113,7 @@ public class KVStore implements Runnable {
 				}
 			}
 		}
+		logger.debug("wait finish");
 	}
 
 	public FloatMatrix get(String key) {
@@ -231,15 +234,14 @@ public class KVStore implements Runnable {
 	@Override
 	public void run() {
 		while(true) {
-			logger.info("start async weights fetch thread");
+			logger.debug("start async weights fetch thread");
 			synchronized (this) {
 				// 与单取参数用一把锁
 				try {
-					logger.info("wait for notify");
 					this.wait();
-					logger.info("start batch request keys");
+					logger.debug("start batch request keys");
 					batchGetKeys();
-					logger.info("end batch request keys");
+					logger.debug("end batch request keys");
 					synchronized (asyncGet) {
 						asyncGet.notifyAll();
 					}

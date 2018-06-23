@@ -52,7 +52,7 @@ public class Context {
 		} else {
 			mode = Mode.STANDALONE;
 		}
-		nTermDump = 100;
+		nTermDump = 1;
 		finish = false;
 		dump = false;
 		thread = Integer.parseInt(System.getProperty("thread", String.valueOf(Runtime.getRuntime().availableProcessors())));

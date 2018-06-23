@@ -11,8 +11,8 @@ public class TestPs {
 	public void start() {
 		Context.init();
 		Context.isPs = true;
-		Updater updater = new AdamUpdater(0.001, 0.9, 0.999, Math.pow(10, -8));
-		PServer server = new PServer(8890, 2);
+		Updater updater = new AdamUpdater(0.01, 0.9, 0.999, Math.pow(10, -8));
+		PServer server = new PServer(8890, 1);
 		server.getUpdaterMap().put(updater.getName(), updater);
 		server.start();
 	}

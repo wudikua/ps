@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import store.KVStore;
 import update.Updater;
+import util.MatrixUtil;
 
 import java.io.IOException;
 import java.util.Map;
@@ -74,26 +75,20 @@ public class PServer implements net.PSGrpc.PS, Runnable {
 		if (!request.getWeights().getKey().contains("emF")) {
 			logger.info("request {}", request.getWeights().getKey());
 		}
-		Matrix.Builder m = Matrix.newBuilder().setKey(request.getWeights().getKey());
-		FloatMatrix result = store.get(m.getKey());
+		FloatMatrix result = store.get(request.getWeights().getKey());
 		if (result == null) {
 			GetMessage resp = GetMessage.newBuilder().setResp(error(204, "null weights")).build();
 			responseObserver.onNext(resp);
 			responseObserver.onCompleted();
 			return;
 		}
-		float[] data = result.data;
+        Matrix.Builder m = MatrixUtil.FloatMatrix_2_ProtoMatrix(request.getWeights().getKey(), result);
 		if (!request.getWeights().getKey().contains("emF")) {
-			logger.info("key {} data len {}", request.getWeights().getKey(), data.length);
-		}
-		for (int i=0; i<result.data.length; i++) {
-			m.addData(data[i]);
+			logger.info("key {} data len {}", request.getWeights().getKey(), result.data.length);
 		}
 		if (request.getWeights().getKey().contains("emF13.28305")) {
-			logger.info("data key{} {}", request.getWeights().getKey(), data);
+			logger.info("data key{} {}", request.getWeights().getKey(), result.data);
 		}
-		m.setRow(result.rows);
-		m.setCols(result.columns);
 		GetMessage resp = GetMessage.newBuilder().setWeights(m.build()).setResp(success).build();
 		responseObserver.onNext(resp);
 		responseObserver.onCompleted();
@@ -179,7 +174,7 @@ public class PServer implements net.PSGrpc.PS, Runnable {
 			}
 			float[] data = exists.data;
 			for (int j=0; j<data.length; j++) {
-				m.addData(data[i]);
+				m.addData(data[j]);
 			}
 			m.setRow(exists.rows);
 			m.setCols(exists.columns);

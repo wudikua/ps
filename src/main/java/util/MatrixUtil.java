@@ -1,5 +1,6 @@
 package util;
 
+import net.Matrix;
 import org.apache.commons.lang3.RandomUtils;
 import org.jblas.FloatMatrix;
 
@@ -79,6 +80,30 @@ public class MatrixUtil {
 				base[offset + i][j] = append.get(i, j);
 			}
 		}
+	}
+
+	public static Matrix.Builder FloatMatrix_2_ProtoMatrix(String key, FloatMatrix matrix) {
+		Matrix.Builder m = Matrix.newBuilder().setKey(key);
+		float[] data = matrix.data;
+		for (int i=0; i<data.length; i++) {
+			m.addData(data[i]);
+		}
+		m.setRow(matrix.rows);
+		m.setCols(matrix.columns);
+		return m;
+	}
+
+	public static FloatMatrix ProtoMatrix_2_FloatMatrix(Matrix m) {
+		float[] data = new float[m.getDataCount()];
+		for (int i=0; i<m.getDataCount(); i++) {
+			data[i] = m.getData(i);
+		}
+		FloatMatrix tmp = new FloatMatrix();
+		tmp.data = data;
+		tmp.rows = m.getRow();
+		tmp.columns = m.getCols();
+		tmp.length = tmp.rows * tmp.columns;
+		return tmp;
 	}
 
 }
