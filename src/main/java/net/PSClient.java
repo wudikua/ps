@@ -73,6 +73,7 @@ public class PSClient {
 	}
 
 	public Map<String, FloatMatrix> getList(List<String> keys) {
+		logger.info("getList keys {}", keys.toString().substring(0, 100));
 		Map<String, FloatMatrix> result = Maps.newHashMap();
 		GetListMessage.Builder request = GetListMessage.newBuilder();
 		for (String key : keys) {

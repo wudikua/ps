@@ -45,7 +45,7 @@
                     <target>1.7</target>
                     <compilerVersion>1.7</compilerVersion>
                 </configuration>
-                <version>2.5.1</version>
+                <version>3.5.1</version>
             </plugin>
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
@@ -76,6 +76,12 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.16.20</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-all</artifactId>
             <version>1.0.0</version>
@@ -85,7 +91,6 @@
             <artifactId>protobuf-java</artifactId>
             <version>3.0.0</version>
         </dependency>
-
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-pool2</artifactId>
@@ -131,12 +136,6 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
             <version>1.7.5</version>
-        </dependency>
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>1.16.2</version>
-            <scope>provided</scope>
         </dependency>
     </dependencies>
 
