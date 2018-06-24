@@ -20,6 +20,7 @@ import update.Updater;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Timer;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
@@ -101,10 +102,10 @@ public class KVStore implements Runnable {
 	}
 
 	public void asyncWait() {
-	    synchronized (this) {
-	        notifyAll();
-        }
 		while(asyncGet.size() != 0) {
+			synchronized (this) {
+				notifyAll();
+			}
 			synchronized (asyncGet) {
 				try {
 					asyncGet.wait(300);

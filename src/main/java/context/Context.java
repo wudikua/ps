@@ -31,7 +31,6 @@ public class Context {
 
 	public static int thread;
 
-
 	public static volatile int psPort;
 
 	public static volatile String psHost;
@@ -47,12 +46,12 @@ public class Context {
 			return;
 		}
 		inited = true;
-		if ("dist".equals(System.getProperty("mode", "dist"))) {
+		if ("dist".equals(System.getProperty("mode", "stand"))) {
 			mode = Mode.DISTRIBUTED;
 		} else {
 			mode = Mode.STANDALONE;
 		}
-		nTermDump = 1;
+		nTermDump = Integer.parseInt((System.getProperty("nTermDump", "20")));;
 		finish = false;
 		dump = false;
 		thread = Integer.parseInt(System.getProperty("thread", String.valueOf(Runtime.getRuntime().availableProcessors())));

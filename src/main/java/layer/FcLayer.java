@@ -79,7 +79,12 @@ public class FcLayer extends Layer {
 		if (logger.isDebugEnabled()) {
 			logger.debug("Z {}", MatrixUtil.pretty(Z));
 		}
-		this.A = activation.forward(Z);
+		// 没有激活函数
+		if (activation != null) {
+			this.A = activation.forward(Z);
+		} else {
+			this.A = Z;
+		}
 		return this.A;
 	}
 
@@ -90,7 +95,9 @@ public class FcLayer extends Layer {
 		} else {
 			delta = next.delta;
 		}
-		delta = activation.backward(delta, Z, A);
+		if (activation != null) {
+			delta = activation.backward(delta, Z, A);
+		}
 		biasGradient = delta.rowMeans();
 		kvStore.sum(name+".bias", biasGradient);
 		weightsGradient = (delta.mmul(pre.getA().transpose())).divi(delta.columns);

@@ -1,5 +1,6 @@
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import data.TestDataSet;
 import evaluate.AUC;
 import model.DNN;
@@ -7,6 +8,7 @@ import model.Model;
 import net.PServer;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.jblas.FloatMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import context.Context;
@@ -19,6 +21,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.*;
 
 public class Main {
@@ -49,7 +52,7 @@ public class Main {
 			int n = 0;
 			boolean eof = false;
 			while (!Context.finish && !eof) {
-				List<TestDataSet.MatrixData> dataList = Lists.newArrayList();
+				List<Map<String, FloatMatrix>> dataList = Lists.newArrayList();
 				for (int i=0; i<Context.thread; i++) {
 					Pair<TestDataSet.MatrixData, Boolean> d = TestDataSet.fromStream(train, Integer.parseInt(System.getProperty("batch", "100")));
 					if (!d.getValue()) {
@@ -57,7 +60,11 @@ public class Main {
 						eof = true;
 						break;
 					}
-					dataList.add(d.getKey());
+					Map<String, FloatMatrix> datas = Maps.newHashMap();
+					datas.put("E", d.getKey().getE());
+					datas.put("X", d.getKey().getX());
+					datas.put("Y", d.getKey().getY());
+					dataList.add(datas);
 				}
 				trainer.run(dataList);
 				if (n ++ == 100) {
@@ -73,7 +80,10 @@ public class Main {
 					break;
 				}
 				float[] y = tData.getKey().getY().toArray();
-				float[] p = trainer.getTrainResult().predict(tData.getKey().getE(), tData.getKey().getX()).toArray();
+				Map<String, FloatMatrix> datas = Maps.newHashMap();
+				datas.put("E", tData.getKey().getE());
+				datas.put("X", tData.getKey().getX());
+				float[] p = trainer.getTrainResult().predict(datas).toArray();
 				for (int i=0; i<y.length; i++) {
 					data.add(new MutablePair<Double, Double>((double) p[i], (double) y[i]));
 				}

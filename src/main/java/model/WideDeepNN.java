@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 @Data
-public class DNN implements Model {
+public class WideDeepNN implements Model {
 
 	private static Logger logger = LoggerFactory.getLogger(DNN.class);
 
@@ -30,6 +30,7 @@ public class DNN implements Model {
 	private Updater updater;
 
 	public void train(Map<String, FloatMatrix> datas) {
+		FloatMatrix W = datas.get("W");
 		FloatMatrix E = datas.get("E");
 		FloatMatrix X = datas.get("X");
 		FloatMatrix Y = datas.get("Y");
@@ -73,6 +74,7 @@ public class DNN implements Model {
 	}
 
 	public FloatMatrix predict(Map<String, FloatMatrix> datas) {
+		FloatMatrix W = datas.get("W");
 		FloatMatrix E = datas.get("E");
 		FloatMatrix X = datas.get("X");
 		// category
@@ -86,9 +88,9 @@ public class DNN implements Model {
 		return layers.get(layers.size()-1).getA();
 	}
 
-	public static DNN buildModel(int embeddingFieldNum, int embeddingSize, int numberFieldNum, int[] fcLayerDims) {
+	public static WideDeepNN buildModel(int embeddingFieldNum, int embeddingSize, int numberFieldNum, int[] fcLayerDims, int wideSize) {
 		// model construct
-		DNN nn = new DNN();
+		WideDeepNN nn = new WideDeepNN();
 		nn.setUpdater(new AdamUpdater(0.005, 0.9, 0.999, Math.pow(10, -8)));
 		nn.setLoss(new CrossEntropy());
 		List<Layer> layers = Lists.newArrayList();
@@ -102,10 +104,18 @@ public class DNN implements Model {
 		// 全连接
 		int inputSize = concatLayer.getOutputDims();
 		List<Layer> fcLayers = FcLayer.build(inputSize, fcLayerDims);
+		Layer deepLastLayer = fcLayers.get(fcLayers.size() - 1);
+		((FcLayer)deepLastLayer).setActivation(null);
+		// wide层
+		Layer wide = new FcLayer("wide", wideSize, 1);
+		((FcLayer) wide).setActivation(null);
+		// 合并 wide层和deep层
+		Layer concatWideDeep = new ConcatLayer("concatWideDeep", Lists.newArrayList(deepLastLayer, wide));
+		// @TODO 组合wide和deep
 
 		/**
 		 * 组织层关系
-		 * category -> embedding + number -> full connected
+		 * category -> embedding + number -> full connected -> wide full connected layer
 		 */
 		categoryFeatureLayer.setNext(embeddingLayer);
 		numberFeatureLayer.setNext(concatLayer);
