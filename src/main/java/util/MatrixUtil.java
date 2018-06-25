@@ -84,6 +84,9 @@ public class MatrixUtil {
 
 	public static Matrix.Builder FloatMatrix_2_ProtoMatrix(String key, FloatMatrix matrix) {
 		Matrix.Builder m = Matrix.newBuilder().setKey(key);
+		if (matrix == null) {
+			return m;
+		}
 		float[] data = matrix.data;
 		for (int i=0; i<data.length; i++) {
 			m.addData(data[i]);

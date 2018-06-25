@@ -8,9 +8,8 @@ import lombok.Data;
 import org.jblas.FloatMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import store.MyKey;
+import util.MatrixUtil;
 
-import javax.sound.midi.MetaMessage;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -51,17 +50,9 @@ public class PSClient {
 				}
 				return null;
 			}
-			float[] data = new float[result.getWeights().getDataCount()];
-			for (int i=0; i<result.getWeights().getDataCount(); i++) {
-				data[i] = result.getWeights().getData(i);
-			}
-			FloatMatrix tmp = new FloatMatrix();
-			tmp.data = data;
-			tmp.rows = result.getWeights().getRow();
-			tmp.columns = result.getWeights().getCols();
-			tmp.length = tmp.rows * tmp.columns;
+			FloatMatrix tmp = MatrixUtil.ProtoMatrix_2_FloatMatrix(result.getWeights());
 			if (!key.contains("emF")) {
-				logger.info("get key {} len {} rows {} cols {}", key, data.length, tmp.rows, tmp.columns);
+				logger.info("get key {} len {} rows {} cols {}", key, tmp.data.length, tmp.rows, tmp.columns);
 			}
 			return tmp;
 		} catch (InterruptedException e) {
@@ -89,16 +80,7 @@ public class PSClient {
 					result.put(resp.getWeights(i).getKey(), null);
 					continue;
 				}
-				float[] data = new float[resp.getWeights(i).getDataCount()];
-				for (int j=0; j<resp.getWeights(i).getDataCount(); j++) {
-					data[j] = resp.getWeights(i).getData(j);
-				}
-				FloatMatrix tmp = new FloatMatrix();
-				tmp.data = data;
-				tmp.rows = resp.getWeights(i).getRow();
-				tmp.columns = resp.getWeights(i).getCols();
-				tmp.length = tmp.rows * tmp.columns;
-				result.put(resp.getWeights(i).getKey(), tmp);
+				result.put(resp.getWeights(i).getKey(), MatrixUtil.ProtoMatrix_2_FloatMatrix(resp.getWeights(i)));
 			}
 		} catch (InterruptedException e) {
 			e.printStackTrace();
@@ -110,17 +92,11 @@ public class PSClient {
 
 	// 更新matrix到参数服务器 replace为false 重复key不替换
 	public FloatMatrix update(String key, FloatMatrix weights, boolean replace) {
-		Matrix.Builder matrixBuilder = Matrix.newBuilder().setKey(key);
-		matrixBuilder.setRow(weights.rows);
-		matrixBuilder.setCols(weights.columns);
-		for (int i=0; i<weights.data.length; i++) {
-			matrixBuilder.addData(weights.data[i]);
-		}
 		try {
 			UpdateMessage result = stub.upsert(UpdateMessage.newBuilder()
 					.setMeta(RequestMeta.newBuilder().setHost(Context.host).build())
 					.setReplace(replace)
-					.setWeights(matrixBuilder).build()).get();
+					.setWeights(MatrixUtil.FloatMatrix_2_ProtoMatrix(key, weights)).build()).get();
 			if (result.getResp().getEc() != 200) {
 				logger.info("get error {}", result.getResp().getEm());
 				return null;
@@ -130,17 +106,9 @@ public class PSClient {
 				return weights;
 			}
 			// 没有替换，获取到新的weights
-			float[] data = new float[result.getWeights().getDataCount()];
-			for (int i=0; i<result.getWeights().getDataCount(); i++) {
-				data[i] = result.getWeights().getData(i);
-			}
-			FloatMatrix tmp = new FloatMatrix();
-			tmp.data = data;
-			tmp.rows = result.getWeights().getRow();
-			tmp.columns = result.getWeights().getCols();
-			tmp.length = tmp.rows * tmp.columns;
+			FloatMatrix tmp = MatrixUtil.ProtoMatrix_2_FloatMatrix(result.getWeights());
 			if (!key.contains("emF")) {
-				logger.info("update key {} len {} rows {} cols {}", key, data.length, tmp.rows, tmp.columns);
+				logger.info("update key {} len {} rows {} cols {}", key, tmp.data.length, tmp.rows, tmp.columns);
 			}
 			return tmp;
 		} catch (InterruptedException e) {
@@ -155,13 +123,7 @@ public class PSClient {
 		UpdateListMessage.Builder request = UpdateListMessage.newBuilder().setReplace(replace);
 		for (String key : updates.keySet()) {
 			FloatMatrix weights = updates.get(key);
-			Matrix.Builder matrixBuilder = Matrix.newBuilder().setKey(key);
-			matrixBuilder.setRow(weights.rows);
-			matrixBuilder.setCols(weights.columns);
-			for (int i=0; i<weights.data.length; i++) {
-				matrixBuilder.addData(weights.data[i]);
-			}
-			request.addWeights(matrixBuilder);
+			request.addWeights(MatrixUtil.FloatMatrix_2_ProtoMatrix(key, weights));
 		}
 		try {
 			UpdateListMessage resp = stub.upsertList(request.build()).get();
@@ -171,15 +133,7 @@ public class PSClient {
 					continue;
 				}
 				// 没有替换，获取到新的weights
-				float[] data = new float[m.getDataCount()];
-				for (int j=0; j<m.getDataCount(); j++) {
-					data[j] = m.getData(j);
-				}
-				FloatMatrix tmp = new FloatMatrix();
-				tmp.data = data;
-				tmp.rows = m.getRow();
-				tmp.columns = m.getCols();
-				tmp.length = tmp.rows * tmp.columns;
+				FloatMatrix tmp = MatrixUtil.ProtoMatrix_2_FloatMatrix(m);
 				updates.put(m.getKey(), tmp);
 			}
 		} catch (InterruptedException e) {
@@ -192,16 +146,11 @@ public class PSClient {
 
 	// 推送梯度
 	public void push(String key, FloatMatrix gradient, String updaterKey, boolean async) {
-		Matrix.Builder matrixBuilder = Matrix.newBuilder().setKey(key);
-		matrixBuilder.setRow(gradient.rows);
-		matrixBuilder.setCols(gradient.columns);
-		for (float f : gradient.data) {
-			matrixBuilder.addData(f);
-		}
 		try {
 			Future<GradientMessage> future = stub.push(GradientMessage.newBuilder()
 					.setMeta(RequestMeta.newBuilder().setHost(Context.host).build())
-					.setUpdaterKey(updaterKey).setGradient(matrixBuilder).build());
+					.setUpdaterKey(updaterKey)
+					.setGradient(MatrixUtil.FloatMatrix_2_ProtoMatrix(key, gradient)).build());
 			if (!async) {
 				GradientMessage result = future.get();
 				if (result.getResp().getEc() != 200) {

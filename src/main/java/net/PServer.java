@@ -98,20 +98,14 @@ public class PServer implements net.PSGrpc.PS, Runnable {
 	public void getList(GetListMessage request, StreamObserver<GetListMessage> responseObserver) {
 		GetListMessage.Builder resp = GetListMessage.newBuilder();
 		for (int i=0; i<request.getWeightsCount(); i++) {
-			FloatMatrix result = store.get(request.getWeights(i).getKey());
-			Matrix.Builder m = Matrix.newBuilder().setKey(request.getWeights(i).getKey());
+			String key = request.getWeights(i).getKey();
+			FloatMatrix result = store.get(key);
 			if (result == null) {
 				// add empty weights when null
-				resp.addWeights(m);
+				resp.addWeights(MatrixUtil.FloatMatrix_2_ProtoMatrix(key, null));
 				continue;
 			}
-			float[] data = result.data;
-			for (int j=0; j<result.data.length; j++) {
-				m.addData(data[j]);
-			}
-			m.setRow(result.rows);
-			m.setCols(result.columns);
-			resp.addWeights(m);
+			resp.addWeights(MatrixUtil.FloatMatrix_2_ProtoMatrix(key, result));
 		}
 		resp.setResp(success).build();
 		responseObserver.onNext(resp.build());
@@ -122,32 +116,21 @@ public class PServer implements net.PSGrpc.PS, Runnable {
 		if (!request.getWeights().getKey().contains("emF")) {
 			logger.info("insert {}", request.getWeights().getKey());
 		}
-		Matrix.Builder m = Matrix.newBuilder().setUpdate(true).setKey(request.getWeights().getKey());
+		boolean update = true;
 		UpdateMessage.Builder resp = UpdateMessage.newBuilder().setResp(success);
-		FloatMatrix exists = store.get(request.getWeights().getKey());
+		String key = request.getWeights().getKey();
+		FloatMatrix exists = store.get(key);
 		if (exists == null || request.getReplace()) {
-			m.setUpdate(false);
-			float[] data = new float[request.getWeights().getDataList().size()];
-			for (int i=0;i<data.length;i++) {
-				data[i] = request.getWeights().getData(i);
-			}
-			exists = new FloatMatrix();
-			exists.data = data;
-			exists.rows = request.getWeights().getRow();
-			exists.columns = request.getWeights().getCols();
-			exists.length = exists.rows * exists.columns;
+			update = false;
+			exists = MatrixUtil.ProtoMatrix_2_FloatMatrix(request.getWeights());
 			if (!request.getWeights().getKey().contains("emF")) {
 				logger.info("put {} len {} rows {} cols {}",
-						request.getWeights().getKey(), data.length, exists.rows, exists.columns);
+						key, exists.data.length, exists.rows, exists.columns);
 			}
-			store.put(request.getWeights().getKey(), exists);
+			store.put(key, exists);
 		}
-		float[] data = exists.data;
-		for (int i=0; i<data.length; i++) {
-			m.addData(data[i]);
-		}
-		m.setRow(exists.rows);
-		m.setCols(exists.columns);
+		Matrix.Builder m = MatrixUtil.FloatMatrix_2_ProtoMatrix(key, exists);
+		m.setUpdate(update);
 		resp.setWeights(m.build());
 		responseObserver.onNext(resp.build());
 		responseObserver.onCompleted();
@@ -157,27 +140,16 @@ public class PServer implements net.PSGrpc.PS, Runnable {
 	public void upsertList(UpdateListMessage request, StreamObserver<UpdateListMessage> responseObserver) {
 		UpdateListMessage.Builder resp = UpdateListMessage.newBuilder();
 		for (int i=0; i<request.getWeightsCount(); i++) {
-			Matrix.Builder m = Matrix.newBuilder().setUpdate(true).setKey(request.getWeights(i).getKey());
-			FloatMatrix exists = store.get(request.getWeights(i).getKey());
+			boolean update = true;
+			String key = request.getWeights(i).getKey();
+			FloatMatrix exists = store.get(key);
 			if (exists == null || request.getReplace()) {
-				m.setUpdate(false);
-				float[] data = new float[request.getWeights(i).getDataList().size()];
-				for (int j=0;j<data.length;j++) {
-					data[j] = request.getWeights(i).getData(j);
-				}
-				exists = new FloatMatrix();
-				exists.data = data;
-				exists.rows = request.getWeights(i).getRow();
-				exists.columns = request.getWeights(i).getCols();
-				exists.length = exists.rows * exists.columns;
+				update = false;
+				exists = MatrixUtil.ProtoMatrix_2_FloatMatrix(request.getWeights(i));
 				store.put(request.getWeights(i).getKey(), exists);
 			}
-			float[] data = exists.data;
-			for (int j=0; j<data.length; j++) {
-				m.addData(data[j]);
-			}
-			m.setRow(exists.rows);
-			m.setCols(exists.columns);
+			Matrix.Builder m = MatrixUtil.FloatMatrix_2_ProtoMatrix(key, exists);
+			m.setUpdate(update);
 			resp.addWeights(m);
 		}
 		resp.setResp(success).build();
@@ -186,8 +158,9 @@ public class PServer implements net.PSGrpc.PS, Runnable {
 	}
 
 	public void push(GradientMessage request, StreamObserver<GradientMessage> responseObserver) {
+		String key = request.getGradient().getKey();
 		if (!request.getGradient().getKey().contains("emF")) {
-			logger.info("update {}", request.getGradient().getKey());
+			logger.info("update {}", key);
 		}
 		Updater updater = updaterMap.get(request.getUpdaterKey());
 		if (updater == null) {
@@ -196,18 +169,10 @@ public class PServer implements net.PSGrpc.PS, Runnable {
 			responseObserver.onCompleted();
 			return;
 		}
-		float[] data = new float[request.getGradient().getDataCount()];
-		for (int i=0; i<request.getGradient().getDataCount(); i++) {
-			data[i] = request.getGradient().getData(i);
-		}
-		FloatMatrix result = new FloatMatrix();
-		result.data = data;
-		result.rows = request.getGradient().getRow();
-		result.columns = request.getGradient().getCols();
-		result.length = result.rows * result.columns;
-		store.sum(request.getGradient().getKey(), result);
-		if (!updateKeys.containsKey(request.getGradient().getKey())) {
-			updateKeys.put(request.getGradient().getKey(), request.getUpdaterKey());
+
+		store.sum(key, MatrixUtil.ProtoMatrix_2_FloatMatrix(request.getGradient()));
+		if (!updateKeys.containsKey(key)) {
+			updateKeys.put(key, request.getUpdaterKey());
 		}
 		GradientMessage.Builder resp = GradientMessage.newBuilder();
 		responseObserver.onNext(resp.build());
