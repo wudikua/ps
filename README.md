@@ -1,4 +1,6 @@
-# ps
+# 参数服务器
+
+    本项目使用非常少的代码编写了深度学习训练的全过程，有完整的结构，通过面向对象的封装，在算法上有一定扩展性，不仅支持单机模式还支持分布式模式
 
     使用java实现的dnn训练框架，底层矩阵库使用Jblas(https://github.com/mikiobraun/jblas)，参数服务器使用Grpc+protobuf
 
