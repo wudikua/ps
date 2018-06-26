@@ -40,8 +40,10 @@ public class Main {
 			server.start();
 			System.exit(0);
 		}
-		BufferedReader train = new BufferedReader(new FileReader(new File(System.getProperty("context",  "/Users/mengjun/dev/psnet/src/main/resources/train.txt"))));
-		BufferedReader test = new BufferedReader(new FileReader(new File(System.getProperty("test", "/Users/mengjun/dev/psnet/src/main/resources/test.txt"))));
+		BufferedReader train = new BufferedReader(new FileReader(new File(System.getProperty("train",
+				Main.class.getResource("").getPath()+"../../src/main/resources/train.txt"))));
+		BufferedReader test = new BufferedReader(new FileReader(new File(System.getProperty("test",
+				Main.class.getResource("").getPath()+"../../src/main/resources/test.txt"))));
 		Trainer trainer = new Trainer(Context.thread, new Callable<Model>() {
 			@Override
 			public Model call() throws Exception {
@@ -93,8 +95,10 @@ public class Main {
 			}
 			AUC auc = new AUC(data);
 			logger.info("AUC {}", auc.calculate());
-			train = new BufferedReader(new FileReader(new File(System.getProperty("context", "/Users/mengjun/dev/psnet/src/main/resources/train.txt"))));
-			test = new BufferedReader(new FileReader(new File(System.getProperty("test", "/Users/mengjun/dev/psnet/src/main/resources/test.txt"))));
+			train = new BufferedReader(new FileReader(new File(System.getProperty("train",
+					Main.class.getResource("").getPath()+"../../src/main/resources/train.txt"))));
+			test = new BufferedReader(new FileReader(new File(System.getProperty("test",
+					Main.class.getResource("").getPath()+"../../src/main/resources/test.txt"))));
 		}
 	}
 }
