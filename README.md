@@ -3,9 +3,11 @@
 
 # 架构
 
-
+![单机多机架构](https://raw.githubusercontent.com/wudikua/ps/master/src/main/resources/structure.png "单机多机架构")
 
 # 代码结构
+
+![代码结构](https://raw.githubusercontent.com/wudikua/ps/master/src/main/resources/code.png "代码结构")
 
 * activations
 
