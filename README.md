@@ -11,7 +11,7 @@
 
 - __架构__
 
-!(./src/main/resources/structure.png "单机多机架构")
+![](./src/main/resources/structure.png "单机多机架构")
 
     单机多CPU是使用多个相同的模型，提交到线程池，各自做训练，然后再主线程等待所有线程执行完毕对梯度进行更新
 
@@ -20,7 +20,7 @@
 - __代码结构__
 
 
-!(./src/main/resources/code.png "代码结构")
+![](./src/main/resources/code.png "代码结构")
 
 
 - __activations__
