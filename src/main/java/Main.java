@@ -5,6 +5,7 @@ import data.TestDataSet;
 import evaluate.AUC;
 import model.DNN;
 import model.Model;
+import model.WideDeepNN;
 import net.PServer;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -63,6 +64,7 @@ public class Main {
 					Map<String, FloatMatrix> datas = Maps.newHashMap();
 					datas.put("E", d.getKey().getE());
 					datas.put("X", d.getKey().getX());
+					datas.put("W", d.getKey().getX());
 					datas.put("Y", d.getKey().getY());
 					dataList.add(datas);
 				}
@@ -83,6 +85,7 @@ public class Main {
 				Map<String, FloatMatrix> datas = Maps.newHashMap();
 				datas.put("E", tData.getKey().getE());
 				datas.put("X", tData.getKey().getX());
+				datas.put("W", tData.getKey().getX());
 				float[] p = trainer.getTrainResult().predict(datas).toArray();
 				for (int i=0; i<y.length; i++) {
 					data.add(new MutablePair<Double, Double>((double) p[i], (double) y[i]));

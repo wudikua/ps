@@ -19,8 +19,6 @@ public abstract class Layer {
 
 	protected Layer next;
 
-	protected List<Layer> inputs = Lists.newArrayList();
-
 	protected Layer pre;
 
 	protected int inputDims, outputDims;
@@ -59,11 +57,6 @@ public abstract class Layer {
 
 	public Layer setPre(Layer l) {
 		this.pre = l;
-		return this;
-	}
-
-	public Layer setInputs(List<Layer> l) {
-		this.inputs = l;
 		return this;
 	}
 

@@ -1,6 +1,7 @@
 package model;
 
 import activations.Relu;
+import activations.Sigmoid;
 import com.google.common.collect.Lists;
 import context.Context;
 import evaluate.AUC;
@@ -29,15 +30,19 @@ public class WideDeepNN implements Model {
 
 	private Updater updater;
 
+	private List<Layer> inputs = Lists.newArrayList();
+
 	public void train(Map<String, FloatMatrix> datas) {
 		FloatMatrix W = datas.get("W");
 		FloatMatrix E = datas.get("E");
 		FloatMatrix X = datas.get("X");
 		FloatMatrix Y = datas.get("Y");
 		// category
-		layers.get(0).setA(E);
+		inputs.get(0).setA(E);
 		// number
-		layers.get(1).setA(X);
+		inputs.get(1).setA(X);
+		// wide
+		inputs.get(2).setA(W);
 		// 前向
 		for (Layer layer : layers) {
 			layer.forward();
@@ -78,9 +83,11 @@ public class WideDeepNN implements Model {
 		FloatMatrix E = datas.get("E");
 		FloatMatrix X = datas.get("X");
 		// category
-		layers.get(0).setA(E);
+		inputs.get(0).setA(E);
 		// number
-		layers.get(1).setA(X);
+		inputs.get(1).setA(X);
+		// wide
+		inputs.get(2).setA(W);
 		// 前向
 		for (Layer layer : layers) {
 			layer.forward();
@@ -94,6 +101,7 @@ public class WideDeepNN implements Model {
 		nn.setUpdater(new AdamUpdater(0.005, 0.9, 0.999, Math.pow(10, -8)));
 		nn.setLoss(new CrossEntropy());
 		List<Layer> layers = Lists.newArrayList();
+		List<Layer> inputs = Lists.newArrayList();
 		// 输入层
 		Layer categoryFeatureLayer = new InputLayer("category", 0, embeddingFieldNum * embeddingSize).setIsInput(true);
 		Layer numberFeatureLayer = new InputLayer("number", 0, numberFieldNum).setIsInput(true);
@@ -107,11 +115,12 @@ public class WideDeepNN implements Model {
 		Layer deepLastLayer = fcLayers.get(fcLayers.size() - 1);
 		((FcLayer)deepLastLayer).setActivation(null);
 		// wide层
+		Layer wideFeatureLayer = new InputLayer("wideCategory", 0, wideSize).setIsInput(true);
 		Layer wide = new FcLayer("wide", wideSize, 1);
 		((FcLayer) wide).setActivation(null);
 		// 合并 wide层和deep层
-		Layer concatWideDeep = new ConcatLayer("concatWideDeep", Lists.newArrayList(deepLastLayer, wide));
-		// @TODO 组合wide和deep
+		Layer addWideDeep = new AddLayer("addWideDeep", deepLastLayer, wide);
+		((AddLayer) addWideDeep).setActivation(new Sigmoid());
 
 		/**
 		 * 组织层关系
@@ -121,12 +130,20 @@ public class WideDeepNN implements Model {
 		numberFeatureLayer.setNext(concatLayer);
 		embeddingLayer.setNext(concatLayer);
 		concatLayer.setNext(fcLayers.get(0));
+		deepLastLayer.setNext(addWideDeep);
+		wideFeatureLayer.setNext(wide);
+		wide.setNext(addWideDeep);
 		// 添加到layers
-		layers.add(categoryFeatureLayer);
-		layers.add(numberFeatureLayer);
 		layers.add(embeddingLayer);
 		layers.add(concatLayer);
 		layers.addAll(fcLayers);
+		layers.add(wide);
+		layers.add(addWideDeep);
+		// 添加到inputs
+		inputs.add(categoryFeatureLayer);
+		inputs.add(numberFeatureLayer);
+		inputs.add(wideFeatureLayer);
+		nn.setInputs(inputs);
 		nn.setLayers(layers);
 		return nn;
 	}

@@ -27,6 +27,8 @@ public class DNN implements Model {
 
 	private List<Layer> layers = Lists.newArrayList();
 
+	private List<Layer> inputs = Lists.newArrayList();
+
 	private Updater updater;
 
 	public void train(Map<String, FloatMatrix> datas) {
@@ -34,9 +36,9 @@ public class DNN implements Model {
 		FloatMatrix X = datas.get("X");
 		FloatMatrix Y = datas.get("Y");
 		// category
-		layers.get(0).setA(E);
+		inputs.get(0).setA(E);
 		// number
-		layers.get(1).setA(X);
+		inputs.get(1).setA(X);
 		// 前向
 		for (Layer layer : layers) {
 			layer.forward();
@@ -76,9 +78,9 @@ public class DNN implements Model {
 		FloatMatrix E = datas.get("E");
 		FloatMatrix X = datas.get("X");
 		// category
-		layers.get(0).setA(E);
+		inputs.get(0).setA(E);
 		// number
-		layers.get(1).setA(X);
+		inputs.get(1).setA(X);
 		// 前向
 		for (Layer layer : layers) {
 			layer.forward();
@@ -92,6 +94,7 @@ public class DNN implements Model {
 		nn.setUpdater(new AdamUpdater(0.005, 0.9, 0.999, Math.pow(10, -8)));
 		nn.setLoss(new CrossEntropy());
 		List<Layer> layers = Lists.newArrayList();
+		List<Layer> inputs = Lists.newArrayList();
 		// 输入层
 		Layer categoryFeatureLayer = new InputLayer("category", 0, embeddingFieldNum * embeddingSize).setIsInput(true);
 		Layer numberFeatureLayer = new InputLayer("number", 0, numberFieldNum).setIsInput(true);
@@ -112,11 +115,13 @@ public class DNN implements Model {
 		embeddingLayer.setNext(concatLayer);
 		concatLayer.setNext(fcLayers.get(0));
 		// 添加到layers
-		layers.add(categoryFeatureLayer);
-		layers.add(numberFeatureLayer);
 		layers.add(embeddingLayer);
 		layers.add(concatLayer);
 		layers.addAll(fcLayers);
+		// 添加到inputs
+		inputs.add(categoryFeatureLayer);
+		inputs.add(numberFeatureLayer);
+		nn.setInputs(inputs);
 		nn.setLayers(layers);
 		return nn;
 	}

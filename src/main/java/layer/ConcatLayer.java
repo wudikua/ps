@@ -1,5 +1,6 @@
 package layer;
 
+import com.google.common.collect.Lists;
 import lombok.Data;
 import org.jblas.FloatMatrix;
 
@@ -7,6 +8,8 @@ import java.util.List;
 
 @Data
 public class ConcatLayer extends Layer {
+
+	protected List<Layer> inputs = Lists.newArrayList();
 
 	public ConcatLayer(String name, List<Layer> layers) {
 		super();
