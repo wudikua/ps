@@ -9,18 +9,18 @@
     实现FNN模型和Wide And Deep模型
 
 
-- __架构__
+## 架构
 
-!(./src/main/resources/structure.png "单机多机架构")
+![](./src/main/resources/structure.png "单机多机架构")
 
     单机多CPU是使用多个相同的模型，提交到线程池，各自做训练，然后再主线程等待所有线程执行完毕对梯度进行更新
 
     多机与单机的不同在于KVStore是分布式实现，获取参数都是从PS获取，多机还有一点是需要调用参数服务器的barrier测是否需要阻塞
 
-- __代码结构__
+## 代码结构
 
 
-!(./src/main/resources/code.png "代码结构")
+![](./src/main/resources/code.png "代码结构")
 
 
 - __activations__
@@ -65,23 +65,23 @@
     
     以及两个layer指针next和pre，正向的时候pre.A就是当前层的输入，反向的时候next.delta就可以得到前向梯度
 
-- AddLayer
+- __AddLayer__
 
     对两个layer的结果做加法，再使用激活函数，反向时候梯度不变
 
-- ConcatLayer
+- __ConcatLayer__
 
     对两个layer的结果做合并，作为下一个layer的输入
 
-- EmbeddingLayer
+- __EmbeddingLayer__
 
     由若干个EmbeddingField组成
 
-- EmbeddingField
+- __EmbeddingField__
 
     通过map<string, FloatMatrix> 这样的结构做embedding lookup
 
-- FcLayer
+- __FcLayer__
 
     全链接网络，正向为A=activation(WX+B)
 
