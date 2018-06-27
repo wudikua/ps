@@ -33,7 +33,7 @@ public class AddLayer extends Layer {
 	public FloatMatrix forward() {
 		FloatMatrix l = left.A;
 		FloatMatrix r = right.A;
-		Z = l.addi(r).columnSums();
+		Z = l.add(r);
 		if (logger.isDebugEnabled()) {
 			logger.debug("Z {}", MatrixUtil.pretty(Z));
 		}

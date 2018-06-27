@@ -8,6 +8,7 @@ import com.google.common.collect.Maps;
 import context.Context;
 import lombok.Data;
 import org.jblas.FloatMatrix;
+import org.jblas.MatrixFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import util.MatrixUtil;
@@ -37,13 +38,13 @@ public class LRLayer extends Layer {
 		this.initW = new Callable<FloatMatrix>() {
 			@Override
 			public FloatMatrix call() throws Exception {
-				return MatrixUtil.rand(1, 1, 1);
+				return FloatMatrix.zeros(1);
 			}
 		};
 		this.initB = new Callable<FloatMatrix>() {
 			@Override
 			public FloatMatrix call() throws Exception {
-				return MatrixUtil.rand(1, 1, 1);
+				return FloatMatrix.zeros(1);
 			}
 		};
 
@@ -72,7 +73,7 @@ public class LRLayer extends Layer {
 			float sumW = 0f;
 			// dot特征
 			for (int j=0; j<X.rows; j++) {
-				float index = X.data[X.index(i, j)];
+				float index = X.data[X.index(j, i)];
 				FloatMatrix wi = kvStore.get(this.name + ".weights." + index, initW);
 				weights.put(this.name + ".weights." + index, wi);
 				sumW += wi.get(0);

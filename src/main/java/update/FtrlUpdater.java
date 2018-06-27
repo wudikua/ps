@@ -11,6 +11,7 @@ import util.MatrixUtil;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Ftrl: a Method for Stochastic Optimization.
@@ -48,8 +49,8 @@ public class FtrlUpdater implements Updater {
 	}
 
 	public FloatMatrix update(String key, FloatMatrix w, FloatMatrix dw) {
-		if (key.contains("wide")) {
-			logger.info("key w {} dw {}", key, w, dw);
+		if (dw.get(0) == 0) {
+			return w;
 		}
 		if (!N.containsKey(key)) {
 			N.put(key, FloatMatrix.zeros(w.length));

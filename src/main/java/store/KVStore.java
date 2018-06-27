@@ -228,6 +228,13 @@ public class KVStore implements Runnable {
 		for (String key : sum.keySet()) {
 			Updater updater = updaters.get(key);
 			if (updater == null) {
+				for (String updaterKey : updaters.keySet()) {
+					if (key.startsWith(updaterKey)) {
+						updater = updaters.get(updaterKey);
+					}
+				}
+			}
+			if (updater == null) {
 				updater = updaters.get("default");
 			}
 			FloatMatrix g = sum.get(key).divi(sumCnt.get(key).get());
