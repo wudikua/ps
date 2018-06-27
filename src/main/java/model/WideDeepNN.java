@@ -3,6 +3,7 @@ package model;
 import activations.Relu;
 import activations.Sigmoid;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import context.Context;
 import evaluate.AUC;
 import layer.*;
@@ -13,6 +14,7 @@ import org.jblas.FloatMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import update.AdamUpdater;
+import update.FtrlUpdater;
 import update.Updater;
 import util.MatrixUtil;
 
@@ -28,7 +30,7 @@ public class WideDeepNN implements Model {
 
 	private List<Layer> layers = Lists.newArrayList();
 
-	private Updater updater;
+	private Map<String, Updater> updater = Maps.newHashMap();
 
 	private List<Layer> inputs = Lists.newArrayList();
 
@@ -98,7 +100,11 @@ public class WideDeepNN implements Model {
 	public static WideDeepNN buildModel(int embeddingFieldNum, int embeddingSize, int numberFieldNum, int[] fcLayerDims, int wideSize) {
 		// model construct
 		WideDeepNN nn = new WideDeepNN();
-		nn.setUpdater(new AdamUpdater(0.005, 0.9, 0.999, Math.pow(10, -8)));
+		// wide项 使用ftrl更新
+		Updater ftrl = new FtrlUpdater(0.005f, 1f, 0.001f, 0.001f);
+		nn.getUpdater().put("wide.weights", ftrl);
+		nn.getUpdater().put("wide.bias", ftrl);
+		nn.getUpdater().put("default", new AdamUpdater(0.005, 0.9, 0.999, Math.pow(10, -8)));
 		nn.setLoss(new CrossEntropy());
 		List<Layer> layers = Lists.newArrayList();
 		List<Layer> inputs = Lists.newArrayList();
@@ -116,8 +122,8 @@ public class WideDeepNN implements Model {
 		((FcLayer)deepLastLayer).setActivation(null);
 		// wide层
 		Layer wideFeatureLayer = new InputLayer("wideCategory", 0, wideSize).setIsInput(true);
-		Layer wide = new FcLayer("wide", wideSize, 1);
-		((FcLayer) wide).setActivation(null);
+		LRLayer wide = new LRLayer("wide", wideSize);
+		((LRLayer) wide).setActivation(null);
 		// 合并 wide层和deep层
 		Layer addWideDeep = new AddLayer("addWideDeep", deepLastLayer, wide);
 		((AddLayer) addWideDeep).setActivation(new Sigmoid());

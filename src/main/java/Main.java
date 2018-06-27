@@ -15,7 +15,9 @@ import org.slf4j.LoggerFactory;
 import context.Context;
 import train.Trainer;
 import update.AdamUpdater;
+import update.FtrlUpdater;
 import update.Updater;
+import util.MatrixUtil;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -29,14 +31,17 @@ public class Main {
 
 	private static Logger logger = LoggerFactory.getLogger(Main.class);
 
+	public static final int wideSize = 100000;
 
 	public static void main(String args[]) throws Exception {
 		Context.init();
 		if (Context.isPServer()) {
 			// 启动PS进程
-			Updater updater = new AdamUpdater(0.001, 0.9, 0.999, Math.pow(10, -8));
+			Updater updater = new AdamUpdater(0.005, 0.9, 0.999, Math.pow(10, -8));
+			Updater ftrl = new FtrlUpdater(0.005f, 1f, 0.001f, 0.001f);
 			PServer server = new PServer(Context.psPort, Context.workerNum);
 			server.getUpdaterMap().put(updater.getName(), updater);
+			server.getUpdaterMap().put(ftrl.getName(), ftrl);
 			server.start();
 			System.exit(0);
 		}
@@ -47,7 +52,8 @@ public class Main {
 		Trainer trainer = new Trainer(Context.thread, new Callable<Model>() {
 			@Override
 			public Model call() throws Exception {
-				return DNN.buildModel(23, 10, 45, new int[]{1000, 100, 1});
+//				return DNN.buildModel(23, 10, 45, new int[]{1000, 100, 1});
+				return WideDeepNN.buildModel(23, 10, 45, new int[]{1000, 100, 1}, wideSize);
 			}
 		});
 		for (int epoch = 0; epoch < 100 && !Context.finish; epoch++) {
@@ -66,7 +72,7 @@ public class Main {
 					Map<String, FloatMatrix> datas = Maps.newHashMap();
 					datas.put("E", d.getKey().getE());
 					datas.put("X", d.getKey().getX());
-					datas.put("W", d.getKey().getX());
+					datas.put("W", MatrixUtil.hash(d.getKey().getE(), wideSize));
 					datas.put("Y", d.getKey().getY());
 					dataList.add(datas);
 				}

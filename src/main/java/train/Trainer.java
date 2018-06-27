@@ -67,7 +67,6 @@ public class Trainer {
 		List<Future<Void>> futures = Lists.newArrayList();
 		// multi thread submit
 		for (int i=1; i< models.size() && i <= dataList.size(); i++) {
-			Map<String, FloatMatrix> datas = Maps.newHashMap();
 			Future<Void> future = service.submit(new TrainerThread(models.get(i), dataList.get(i-1)));
 			futures.add(future);
 		}

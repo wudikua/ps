@@ -24,6 +24,14 @@ public class MatrixUtil {
 		return sb.toString();
 	}
 
+	public static FloatMatrix hash(FloatMatrix m, int size) {
+		FloatMatrix result = m.dup();
+		for (int i=0; i<result.data.length; i++) {
+			result.data[i] = result.data[i] % size;
+		}
+		return result;
+	}
+
 	public static FloatMatrix randE(int row, int col) {
 		float[][] result = new float[row][col];
 		int[] r = new int[]{0,1};

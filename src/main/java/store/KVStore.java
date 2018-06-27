@@ -223,6 +223,30 @@ public class KVStore implements Runnable {
 		}
 	}
 
+	// 部分key
+	public void update(Map<String, Updater> updaters) {
+		for (String key : sum.keySet()) {
+			Updater updater = updaters.get(key);
+			if (updater == null) {
+				updater = updaters.get("default");
+			}
+			FloatMatrix g = sum.get(key).divi(sumCnt.get(key).get());
+			if (Context.isPServer() || Context.isStandalone()) {
+				// 单机版在本地更新
+				updater.update(key, store.get(key), g);
+			} else {
+				// 推送梯度
+				client.get().push(key, g, updater.getName(), true);
+			}
+		}
+		// 分布式版本BSP更新需要barrier
+		if (!Context.isPServer() && Context.isDistributed()) {
+			logger.info("worker barrier waiting begin");
+			client.get().barrier();
+			logger.info("worker barrier waiting end");
+		}
+	}
+
 	public void clear() {
 		sum.clear();
 		sumCnt.clear();

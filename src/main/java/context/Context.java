@@ -51,7 +51,7 @@ public class Context {
 		} else {
 			mode = Mode.STANDALONE;
 		}
-		nTermDump = Integer.parseInt((System.getProperty("nTermDump", "20")));;
+		nTermDump = Integer.parseInt((System.getProperty("nTermDump", "20")));
 		finish = false;
 		dump = false;
 		thread = Integer.parseInt(System.getProperty("thread", String.valueOf(Runtime.getRuntime().availableProcessors())));

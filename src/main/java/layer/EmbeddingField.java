@@ -78,7 +78,7 @@ public class EmbeddingField {
 	}
 
 	public void clear() {
-		weights = Maps.newHashMap();
+		weights.clear();
 		weightsGradient.clear();
 		weightsGradientN.clear();
 	}

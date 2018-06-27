@@ -1,5 +1,6 @@
 package update;
 
+import com.google.common.collect.Maps;
 import lombok.Data;
 import org.apache.commons.lang.StringUtils;
 import org.jblas.FloatMatrix;
@@ -27,8 +28,8 @@ public class FtrlUpdater implements Updater {
 	private float l1;
 	private float l2;
 
-	private Map<String, FloatMatrix> Z;
-	private Map<String, FloatMatrix> N;
+	private Map<String, FloatMatrix> Z = Maps.newConcurrentMap();
+	private Map<String, FloatMatrix> N = Maps.newConcurrentMap();
 
 	public FtrlUpdater() {}
 
@@ -47,16 +48,15 @@ public class FtrlUpdater implements Updater {
 	}
 
 	public FloatMatrix update(String key, FloatMatrix w, FloatMatrix dw) {
+		if (key.contains("wide")) {
+			logger.info("key w {} dw {}", key, w, dw);
+		}
 		if (!N.containsKey(key)) {
 			N.put(key, FloatMatrix.zeros(w.length));
 		}
 		if (!Z.containsKey(key)) {
 			Z.put(key, FloatMatrix.zeros(w.length));
 		}
-		FloatMatrix s = MatrixFunctions.sqrt(N.get(key).add(MatrixFunctions.pow(dw, 2))).subi(MatrixFunctions.sqrt(N.get(key).div(this.alfa)));
-		Z.put(key, Z.get(key).addi(dw.sub(s.mul(w))));
-		N.put(key, N.get(key).addi(MatrixFunctions.pow(dw, 2)));
-
 		FloatMatrix zi = Z.get(key);
 		FloatMatrix ni = N.get(key);
 		// update each param
@@ -68,6 +68,9 @@ public class FtrlUpdater implements Updater {
 				w.data[i] = -(zi.data[i] - sign * l1) / ((l2 + (beta + (float)Math.sqrt(ni.data[i]))) / alfa);
 			}
 		}
+		FloatMatrix s = MatrixFunctions.sqrt(N.get(key).add(MatrixFunctions.pow(dw, 2))).subi(MatrixFunctions.sqrt(N.get(key).div(this.alfa)));
+		Z.put(key, Z.get(key).addi(dw.sub(s.mul(w))));
+		N.put(key, N.get(key).addi(MatrixFunctions.pow(dw, 2)));
 		return w;
 	}
 

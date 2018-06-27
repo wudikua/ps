@@ -2,6 +2,7 @@ package model;
 
 import activations.Relu;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import context.Context;
 import evaluate.AUC;
 import layer.*;
@@ -29,7 +30,7 @@ public class DNN implements Model {
 
 	private List<Layer> inputs = Lists.newArrayList();
 
-	private Updater updater;
+	private Map<String, Updater> updater = Maps.newHashMap();
 
 	public void train(Map<String, FloatMatrix> datas) {
 		FloatMatrix E = datas.get("E");
@@ -91,7 +92,7 @@ public class DNN implements Model {
 	public static DNN buildModel(int embeddingFieldNum, int embeddingSize, int numberFieldNum, int[] fcLayerDims) {
 		// model construct
 		DNN nn = new DNN();
-		nn.setUpdater(new AdamUpdater(0.005, 0.9, 0.999, Math.pow(10, -8)));
+		nn.getUpdater().put("default", new AdamUpdater(0.005, 0.9, 0.999, Math.pow(10, -8)));
 		nn.setLoss(new CrossEntropy());
 		List<Layer> layers = Lists.newArrayList();
 		List<Layer> inputs = Lists.newArrayList();

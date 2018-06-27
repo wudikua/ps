@@ -14,5 +14,5 @@ public interface Model {
 
 	public void update();
 
-	public Updater getUpdater();
+	public Map<String, Updater> getUpdater();
 }
