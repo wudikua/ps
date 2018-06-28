@@ -1,4 +1,5 @@
 syntax = "proto3";
+package net;
 option java_package = "net";
 option java_outer_classname = "Ps";
 option java_multiple_files = true;

@@ -7,22 +7,42 @@
 
 <div id="myDiv" style="width: 480px; height: 400px;"></div>
 <script>
+
+    window.charts = {};
+    window.step = 0;
+
     $(document).ready(function(){
         setInterval("repaint()",1000);
     });
     function repaint() {
-        htmlobj = $.ajax({url:"/?act=loss",async:false});
+        htmlobj = $.ajax({url:"/?act=data&step="+step, async:false});
         obj = JSON.parse(htmlobj.responseText);
-        var trace2 = {
-            x: obj.x,
-            y: obj.y,
+        $.each(obj, function(id, val){
+            var update = {
+                x: [val.x],
+                y: [val.y]
+            };
+            c = window.charts[id];
+            if (c == null || c == undefined) {
+                newChart(id);
+            }
+            Plotly.extendTraces(id, update, [0]);
+            step += val.x.length;
+        });
+    }
+
+    function newChart(id) {
+        $(document.body).append("<div id='"+id+"' style='width: 1000px; height: 400px;'></div>");
+        var trace = {
+            x: [],
+            y: [],
             xaxis: 'x',
             yaxis: 'y',
             type: 'scatter'
         };
-        var data = [trace2];
         var layout = {};
-        Plotly.newPlot('myDiv', data, layout);
+        window.charts[id]= Plotly.newPlot(id, [trace], layout);
+        return window.charts[id];
     }
 </script>
 </body>
