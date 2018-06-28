@@ -1,0 +1,28 @@
+<head>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
+</head>
+
+<body>
+
+<div id="myDiv" style="width: 480px; height: 400px;"></div>
+<script>
+    $(document).ready(function(){
+        setInterval("repaint()",1000);
+    });
+    function repaint() {
+        htmlobj = $.ajax({url:"/?act=loss",async:false});
+        obj = JSON.parse(htmlobj.responseText);
+        var trace2 = {
+            x: obj.x,
+            y: obj.y,
+            xaxis: 'x',
+            yaxis: 'y',
+            type: 'scatter'
+        };
+        var data = [trace2];
+        var layout = {};
+        Plotly.newPlot('myDiv', data, layout);
+    }
+</script>
+</body>
