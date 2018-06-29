@@ -45,43 +45,6 @@ public class UiServer extends NanoHTTPD implements UiServerGrpc.UiServer {
         Context.init();
         start(NanoHTTPD.SOCKET_READ_TIMEOUT, false);
 		System.out.println("\nRunning! Point your browsers to http://localhost:8888/ \n");
-//		new Thread(new Runnable() {
-//			@Override
-//			public void run() {
-//				AtomicInteger l = new AtomicInteger(0);
-//				while (true) {
-//					synchronized (this) {
-//						List<Float> x = xs.putIfAbsent("loss", Lists.newArrayList());
-//						if (x == null) {
-//							x = xs.putIfAbsent("loss", Lists.newArrayList());
-//						}
-//						List<Float> y = ys.putIfAbsent("loss", Lists.newArrayList());
-//						if (y == null) {
-//							y = ys.putIfAbsent("loss", Lists.newArrayList());
-//						}
-//						x.add((float) l.getAndIncrement());
-//						y.add(ThreadLocalRandom.current().nextFloat());
-//
-//                        List<Float> x2 = xs.putIfAbsent("auc", Lists.newArrayList());
-//                        if (x2 == null) {
-//                            x2 = xs.putIfAbsent("auc", Lists.newArrayList());
-//                        }
-//                        List<Float> y2 = ys.putIfAbsent("auc", Lists.newArrayList());
-//                        if (y2 == null) {
-//                            y2 = ys.putIfAbsent("auc", Lists.newArrayList());
-//                        }
-//                        x2.add((float) l.getAndIncrement());
-//                        y2.add(ThreadLocalRandom.current().nextFloat());
-//					}
-//					try {
-//						Thread.sleep(1000);
-//					} catch (InterruptedException e) {
-//						e.printStackTrace();
-//					}
-//				}
-//			}
-//		}).start();
-
         server = ServerBuilder.forPort(Context.uiPort).addService(UiServerGrpc.bindService(this)).build();
         try {
             server.start();

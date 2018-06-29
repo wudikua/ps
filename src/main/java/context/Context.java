@@ -29,6 +29,8 @@ public class Context {
 
 	public static volatile boolean isPs;
 
+	public static volatile boolean isPsAsync;
+
 	public static volatile int workerNum;
 
 	public static int thread;
@@ -52,7 +54,7 @@ public class Context {
 			return;
 		}
 		inited = true;
-		if ("dist".equals(System.getProperty("mode", "stand"))) {
+		if ("dist".equals(System.getProperty("mode", "dist"))) {
 			mode = Mode.DISTRIBUTED;
 		} else {
 			mode = Mode.STANDALONE;
@@ -62,6 +64,7 @@ public class Context {
 		dump = false;
 		thread = Integer.parseInt(System.getProperty("thread", String.valueOf(Runtime.getRuntime().availableProcessors())));
 		isPs = "1".equals(System.getProperty("ps", "0"));
+		isPsAsync = "1".equals(System.getProperty("isPsAsync", "0"));
 		workerNum = Integer.parseInt((System.getProperty("workerNum", "1")));
 		psPort = Integer.parseInt((System.getProperty("psPort", "8890")));
 		psHost = System.getProperty("psHost", "localhost");

@@ -17,6 +17,8 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 @Data
 public class PServer implements net.PSGrpc.PS, Runnable {
@@ -40,6 +42,8 @@ public class PServer implements net.PSGrpc.PS, Runnable {
 	private final AtomicLong workerStep = new AtomicLong(0);
 
 	private Map<String, String> updateKeys = Maps.newConcurrentMap();
+
+	private ReadWriteLock updateKeysLock = new ReentrantReadWriteLock();
 
 	private Executor updateThread = Executors.newSingleThreadExecutor();
 
@@ -171,37 +175,64 @@ public class PServer implements net.PSGrpc.PS, Runnable {
 		}
 
 		store.sum(key, MatrixUtil.ProtoMatrix_2_FloatMatrix(request.getGradient()));
+		updateKeysLock.readLock().lock();
 		if (!updateKeys.containsKey(key)) {
 			updateKeys.put(key, request.getUpdaterKey());
 		}
+		updateKeysLock.readLock().unlock();
 		GradientMessage.Builder resp = GradientMessage.newBuilder();
 		responseObserver.onNext(resp.build());
 		responseObserver.onCompleted();
 	}
 
+	private void psUpdate() {
+		logger.info("start update all params for term {}", globalStep.get());
+		// 更新key
+		updateKeysLock.writeLock().lock();
+		try {
+			for (String key : updateKeys.keySet()) {
+				Updater updater = updaterMap.get(updateKeys.get(key));
+				if (!key.contains("emF")) {
+					logger.info("update key {}", key);
+				}
+				store.update(updater, key);
+			}
+			updateKeys.clear();
+		} finally {
+			updateKeysLock.writeLock().unlock();
+		}
+		globalStep.incrementAndGet();
+	}
+
 	public void run() {
-		while (true) {
-			synchronized (this) {
+		if (Context.isPsAsync) {
+			while (true) {
+				long step = globalStep.get();
+				long wStep = workerStep.get();
+				if (wStep > step + this.workerNum) {
+					psUpdate();
+				}
 				try {
-					// 等待barrier的通知
-					logger.info("wait workers finish");
-					this.wait();
+					Thread.sleep(100);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
-				logger.info("start update all params for term {}", globalStep.get());
-				// 更新key
-				for (String key :updateKeys.keySet()) {
-					Updater updater = updaterMap.get(updateKeys.get(key));
-					if (!key.contains("emF")) {
-						logger.info("update key {}", key);
+			}
+		} else {
+			while (true) {
+				synchronized (this) {
+					try {
+						// 等待barrier的通知
+						logger.info("wait workers finish");
+						this.wait();
+					} catch (InterruptedException e) {
+						e.printStackTrace();
 					}
-					store.update(updater, key);
-				}
-				globalStep.incrementAndGet();
-				synchronized (globalStep) {
-					// 通知所有barrier
-					globalStep.notifyAll();
+					psUpdate();
+					synchronized (globalStep) {
+						// 通知所有barrier
+						globalStep.notifyAll();
+					}
 				}
 			}
 		}
@@ -211,6 +242,12 @@ public class PServer implements net.PSGrpc.PS, Runnable {
 		long step = globalStep.get();
 		long wStep = workerStep.incrementAndGet();
 		logger.info("barrier step {} wStep {}", step, wStep);
+		if (Context.isPsAsync) {
+			// 不阻塞
+			responseObserver.onNext(BarrierMessage.newBuilder().setResp(success).build());
+			responseObserver.onCompleted();
+			return;
+		}
 		// 等待其他worker
 		logger.info("wait for other worker");
 		while (wStep < step + this.workerNum) {

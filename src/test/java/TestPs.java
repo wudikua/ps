@@ -12,6 +12,7 @@ public class TestPs {
 	public void start() {
 		Context.init();
 		Context.isPs = true;
+		Context.isPsAsync = true;
 		Updater updater = new AdamUpdater(0.005, 0.9, 0.999, Math.pow(10, -8));
 		Updater ftrl = new FtrlUpdater(0.005f, 1f, 0.001f, 0.001f);
 		PServer server = new PServer(8890, 1);
