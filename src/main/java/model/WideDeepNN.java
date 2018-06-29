@@ -34,7 +34,7 @@ public class WideDeepNN implements Model {
 
 	private List<Layer> inputs = Lists.newArrayList();
 
-	public void train(Map<String, FloatMatrix> datas) {
+	public float train(Map<String, FloatMatrix> datas) {
 		FloatMatrix W = datas.get("W");
 		FloatMatrix E = datas.get("E");
 		FloatMatrix X = datas.get("X");
@@ -65,13 +65,14 @@ public class WideDeepNN implements Model {
 			Context.finish = true;
 			logger.info("\n\nP:{} \nY:{} \n\n", P, Y, delta);
 			logger.info("Oh Yeah lossVal is too slim !!! model train success");
-			return;
+			return lossVal;
 		}
 		layers.get(layers.size() - 1).setDelta(delta);
 		// 反向求导
 		for (int i=layers.size() - 1; i>=0; i--) {
 			layers.get(i).backward();
 		}
+		return lossVal;
 	}
 
 	public void update() {

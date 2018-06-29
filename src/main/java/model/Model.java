@@ -8,7 +8,7 @@ import java.util.Map;
 
 public interface Model {
 
-	public void train(Map<String, FloatMatrix> datas);
+	public float train(Map<String, FloatMatrix> datas);
 
 	public FloatMatrix predict(Map<String, FloatMatrix> datas);
 

@@ -12,23 +12,27 @@
     window.step = 0;
 
     $(document).ready(function(){
-        setInterval("repaint()",1000);
+        setInterval("repaint()", 1000);
     });
     function repaint() {
         htmlobj = $.ajax({url:"/?act=data&step="+step, async:false});
         obj = JSON.parse(htmlobj.responseText);
+        s = 0;
         $.each(obj, function(id, val){
             var update = {
-                x: [val.x],
-                y: [val.y]
+                y: [val.x],
+                x: [val.y]
             };
             c = window.charts[id];
             if (c == null || c == undefined) {
                 newChart(id);
             }
             Plotly.extendTraces(id, update, [0]);
-            step += val.x.length;
+            if (s == 0) {
+                s += val.x.length;
+            }
         });
+        step += s;
     }
 
     function newChart(id) {
@@ -40,7 +44,9 @@
             yaxis: 'y',
             type: 'scatter'
         };
-        var layout = {};
+        var layout = {
+            title: id
+        };
         window.charts[id]= Plotly.newPlot(id, [trace], layout);
         return window.charts[id];
     }

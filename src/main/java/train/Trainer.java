@@ -2,6 +2,7 @@ package train;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import context.Context;
 import data.TestDataSet;
 import javafx.scene.effect.FloatMap;
 import lombok.Data;
@@ -12,6 +13,8 @@ import org.jblas.FloatMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import store.KVStore;
+import visual.UiClient;
+import visual.UiServer;
 
 import java.util.List;
 import java.util.Map;
@@ -28,7 +31,7 @@ public class Trainer {
 
 	private List<Model> models;
 
-	private static class TrainerThread implements Callable<Void> {
+	private static class TrainerThread implements Callable<Float> {
 		Map<String, FloatMatrix> datas;
 		Model nn;
 		public TrainerThread(Model nn, Map<String, FloatMatrix> datas) {
@@ -37,13 +40,13 @@ public class Trainer {
 		}
 
 		@Override
-		public Void call() throws Exception {
+		public Float call() throws Exception {
 			try {
-				nn.train(datas);
+				return nn.train(datas);
 			} catch (Exception e) {
 				logger.error("trainer error", e);
 			}
-			return null;
+			return 0f;
 		}
 	}
 
@@ -64,16 +67,17 @@ public class Trainer {
 	}
 
 	public void run(List<Map<String, FloatMatrix>> dataList) {
-		List<Future<Void>> futures = Lists.newArrayList();
+		List<Future<Float>> futures = Lists.newArrayList();
 		// multi thread submit
 		for (int i=1; i< models.size() && i <= dataList.size(); i++) {
-			Future<Void> future = service.submit(new TrainerThread(models.get(i), dataList.get(i-1)));
+			Future<Float> future = service.submit(new TrainerThread(models.get(i), dataList.get(i-1)));
 			futures.add(future);
 		}
+		float loss =0;
 		// wait for every thread finish
-		for (Future f : futures) {
+		for (Future<Float> f : futures) {
 			try {
-				f.get(1000, TimeUnit.SECONDS);
+				loss += f.get(1000, TimeUnit.SECONDS);
 			} catch (InterruptedException | ExecutionException | TimeoutException e) {
 				logger.error("train error", e);
 			}
@@ -89,6 +93,16 @@ public class Trainer {
 		}
 		// 清理缓存中的权重
 		KVStore.ins().clear();
+		if (loss != 0) {
+			// report meta
+			long step = Context.step.incrementAndGet();
+			UiClient.ins().plot("loss", loss / Context.thread, step);
+			UiClient.ins().plot("fc0.weights.0", KVStore.ins().get("fc0.weights").get(0 , 0), step);
+			UiClient.ins().plot("fc0.bias.0", KVStore.ins().get("fc0.bias").get(0, 0), step);
+
+			UiClient.ins().plot("fc0.weights.mean", KVStore.ins().get("fc0.weights").mean(), step);
+			UiClient.ins().plot("fc0.bias.mean", KVStore.ins().get("fc0.bias").mean(), step);
+		}
 	}
 
 	public Model getTrainResult() {

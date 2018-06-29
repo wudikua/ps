@@ -25,6 +25,8 @@ public class Context {
 		STANDALONE, DISTRIBUTED
 	}
 
+	public static volatile AtomicLong step = new AtomicLong(0);
+
 	public static volatile boolean isPs;
 
 	public static volatile int workerNum;
@@ -34,6 +36,10 @@ public class Context {
 	public static volatile int psPort;
 
 	public static volatile String psHost;
+
+	public static volatile int uiPort;
+
+	public static volatile String uiHost;
 
 	public static volatile Mode mode;
 
@@ -59,6 +65,8 @@ public class Context {
 		workerNum = Integer.parseInt((System.getProperty("workerNum", "1")));
 		psPort = Integer.parseInt((System.getProperty("psPort", "8890")));
 		psHost = System.getProperty("psHost", "localhost");
+		uiPort = Integer.parseInt((System.getProperty("uiPort", "8990")));
+		uiHost = System.getProperty("uiHost", "localhost");
 		try {
 			host = InetAddress.getLocalHost().getHostName();
 			if (host.indexOf(".momo.com") > 0) {

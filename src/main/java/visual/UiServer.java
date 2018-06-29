@@ -8,8 +8,11 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import context.Context;
 import data.TestDataSet;
 import fi.iki.elonen.NanoHTTPD;
+import io.grpc.Server;
+import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
 import lombok.Data;
 import net.PServer;
@@ -35,37 +38,67 @@ public class UiServer extends NanoHTTPD implements UiServerGrpc.UiServer {
 
 	ConcurrentHashMap<String, List<Float>> ys = new ConcurrentHashMap<>();
 
+    Server server;
 
 	public UiServer() throws IOException {
 		super(8888);
-		start(NanoHTTPD.SOCKET_READ_TIMEOUT, false);
+        Context.init();
+        start(NanoHTTPD.SOCKET_READ_TIMEOUT, false);
 		System.out.println("\nRunning! Point your browsers to http://localhost:8888/ \n");
-		new Thread(new Runnable() {
-			@Override
-			public void run() {
-				AtomicInteger l = new AtomicInteger(0);
-				while (true) {
-					synchronized (this) {
-						List<Float> x = xs.putIfAbsent("loss", Lists.newArrayList());
-						if (x == null) {
-							x = xs.putIfAbsent("loss", Lists.newArrayList());
-						}
-						List<Float> y = ys.putIfAbsent("loss", Lists.newArrayList());
-						if (y == null) {
-							y = ys.putIfAbsent("loss", Lists.newArrayList());
-						}
-						x.add((float) l.getAndIncrement());
-						y.add(ThreadLocalRandom.current().nextFloat());
-					}
-					try {
-						Thread.sleep(1000);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-				}
-			}
-		}).start();
-	}
+//		new Thread(new Runnable() {
+//			@Override
+//			public void run() {
+//				AtomicInteger l = new AtomicInteger(0);
+//				while (true) {
+//					synchronized (this) {
+//						List<Float> x = xs.putIfAbsent("loss", Lists.newArrayList());
+//						if (x == null) {
+//							x = xs.putIfAbsent("loss", Lists.newArrayList());
+//						}
+//						List<Float> y = ys.putIfAbsent("loss", Lists.newArrayList());
+//						if (y == null) {
+//							y = ys.putIfAbsent("loss", Lists.newArrayList());
+//						}
+//						x.add((float) l.getAndIncrement());
+//						y.add(ThreadLocalRandom.current().nextFloat());
+//
+//                        List<Float> x2 = xs.putIfAbsent("auc", Lists.newArrayList());
+//                        if (x2 == null) {
+//                            x2 = xs.putIfAbsent("auc", Lists.newArrayList());
+//                        }
+//                        List<Float> y2 = ys.putIfAbsent("auc", Lists.newArrayList());
+//                        if (y2 == null) {
+//                            y2 = ys.putIfAbsent("auc", Lists.newArrayList());
+//                        }
+//                        x2.add((float) l.getAndIncrement());
+//                        y2.add(ThreadLocalRandom.current().nextFloat());
+//					}
+//					try {
+//						Thread.sleep(1000);
+//					} catch (InterruptedException e) {
+//						e.printStackTrace();
+//					}
+//				}
+//			}
+//		}).start();
+
+        server = ServerBuilder.forPort(Context.uiPort).addService(UiServerGrpc.bindService(this)).build();
+        try {
+            server.start();
+            logger.info("start ui grpc port {}", Context.uiPort);
+            server.awaitTermination();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } finally {
+            close();
+        }
+    }
+
+    public void close() {
+        server.shutdown();
+    }
 
 	public static void main(String args[]) {
 		try {
@@ -75,7 +108,7 @@ public class UiServer extends NanoHTTPD implements UiServerGrpc.UiServer {
 		}
 	}
 
-	public synchronized Response serve(IHTTPSession session) {
+	public Response serve(IHTTPSession session) {
 		Map<String, String> params = session.getParms();
 		if ("data".equals(params.get("act"))) {
 			int step = Integer.parseInt(params.get("step"));
@@ -87,8 +120,12 @@ public class UiServer extends NanoHTTPD implements UiServerGrpc.UiServer {
 					continue;
 				}
 				Map<String, Object> tmp = Maps.newHashMap();
-				tmp.put("x", x.subList(step, x.size()));
-				tmp.put("y", y.subList(step, y.size()));
+				synchronized (x) {
+                    tmp.put("x", x.subList(step, x.size()));
+                }
+                synchronized (y) {
+                    tmp.put("y", y.subList(step, y.size()));
+                }
 				result.put(key, tmp);
 			}
 			try {
@@ -102,10 +139,17 @@ public class UiServer extends NanoHTTPD implements UiServerGrpc.UiServer {
 	}
 
 	@Override
-	public synchronized void plot(PlotMessage request, StreamObserver<PlotMessage> responseObserver) {
+	public void plot(PlotMessage request, StreamObserver<PlotMessage> responseObserver) {
+	    logger.info("plot {}", request.getId());
 		String key = request.getId();
 		List<Float> y = ys.putIfAbsent(key, Lists.newArrayList());
 		List<Float> x = xs.putIfAbsent(key, Lists.newArrayList());
+        if (x == null) {
+            x = xs.putIfAbsent(key, Lists.newArrayList());
+        }
+        if (y == null) {
+            y = ys.putIfAbsent(key, Lists.newArrayList());
+        }
 		assert y != null;
 		synchronized (y) {
 			y.addAll(request.getData().getYList());
@@ -114,5 +158,7 @@ public class UiServer extends NanoHTTPD implements UiServerGrpc.UiServer {
 		synchronized (x) {
 			x.addAll(request.getData().getXList());
 		}
+		responseObserver.onNext(PlotMessage.newBuilder().build());
+		responseObserver.onCompleted();
 	}
 }

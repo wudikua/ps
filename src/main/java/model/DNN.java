@@ -32,7 +32,7 @@ public class DNN implements Model {
 
 	private Map<String, Updater> updater = Maps.newHashMap();
 
-	public void train(Map<String, FloatMatrix> datas) {
+	public float train(Map<String, FloatMatrix> datas) {
 		FloatMatrix E = datas.get("E");
 		FloatMatrix X = datas.get("X");
 		FloatMatrix Y = datas.get("Y");
@@ -60,13 +60,14 @@ public class DNN implements Model {
 			Context.finish = true;
 			logger.info("\n\nP:{} \nY:{} \n\n", P, Y, delta);
 			logger.info("Oh Yeah lossVal is too slim !!! model train success");
-			return;
+			return lossVal;
 		}
 		layers.get(layers.size() - 1).setDelta(delta);
 		// 反向求导
 		for (int i=layers.size() - 1; i>=0; i--) {
 			layers.get(i).backward();
 		}
+		return lossVal;
 	}
 
 	public void update() {
