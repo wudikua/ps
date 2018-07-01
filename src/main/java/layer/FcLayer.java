@@ -3,6 +3,7 @@ package layer;
 import activations.Relu;
 import activations.Sigmoid;
 import com.google.common.collect.Lists;
+import context.Context;
 import org.jblas.FloatMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,6 +13,7 @@ import lombok.Data;
 import store.KVStore;
 import update.Updater;
 import util.MatrixUtil;
+import visual.UiClient;
 
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -85,6 +87,7 @@ public class FcLayer extends Layer {
 		} else {
 			this.A = Z;
 		}
+		UiClient.ins().plot(name+".mean", this.A.mean(), Context.step.get());
 		return this.A;
 	}
 

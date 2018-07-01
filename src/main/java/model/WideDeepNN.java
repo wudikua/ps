@@ -15,8 +15,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import update.AdamUpdater;
 import update.FtrlUpdater;
+import update.SimpleUpdater;
 import update.Updater;
 import util.MatrixUtil;
+import visual.UiClient;
 
 import java.util.List;
 import java.util.Map;
@@ -57,7 +59,9 @@ public class WideDeepNN implements Model {
 		logger.info("LOSS is {}", lossVal);
 		if (Context.term.get().incrementAndGet() % Context.nTermDump == 0) {
 			AUC auc = new AUC(P.toArray(), Y.toArray());
-			logger.info("Train AUC {}", auc.calculate());
+			double a = auc.calculate();
+			logger.info("Train AUC {}", a);
+			UiClient.ins().plot("Train_AUC", (float)a, Context.step.get());
 			logger.info("\n\nP:{} \nY:{} \nD:{}\n", P.getRange(0, Math.min(20, P.columns)), Y.getRange(0, Math.min(20, Y.columns)), delta.getRange(0, Math.min(20, delta.columns)));
 			Context.dump = false;
 		}
@@ -103,6 +107,7 @@ public class WideDeepNN implements Model {
 		WideDeepNN nn = new WideDeepNN();
 		// wide项 使用ftrl更新
 		Updater ftrl = new FtrlUpdater(0.005f, 1f, 0.001f, 0.001f);
+		Updater simple = new SimpleUpdater(0.005f);
 		nn.getUpdater().put("wide.weights", ftrl);
 		nn.getUpdater().put("wide.bias", ftrl);
 		nn.getUpdater().put("default", new AdamUpdater(0.005, 0.9, 0.999, Math.pow(10, -8)));

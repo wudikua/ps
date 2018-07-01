@@ -18,6 +18,7 @@
         htmlobj = $.ajax({url:"/?act=data&step="+step, async:false});
         obj = JSON.parse(htmlobj.responseText);
         s = 0;
+        Object.keys(obj).sort();
         $.each(obj, function(id, val){
             var update = {
                 y: [val.x],
