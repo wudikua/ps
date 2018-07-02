@@ -16,12 +16,15 @@ import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
 import lombok.Data;
 import net.PServer;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -74,9 +77,15 @@ public class UiServer extends NanoHTTPD implements UiServerGrpc.UiServer {
 	public Response serve(IHTTPSession session) {
 		Map<String, String> params = session.getParms();
 		if ("data".equals(params.get("act"))) {
+			// /act=data&setp=1&key=fc0,fc1
+			String keys = params.get("key");
 			int step = Integer.parseInt(params.get("step"));
+			Collection<String> set = xs.keySet();
+			if (StringUtils.isNotBlank(keys)) {
+				set = Lists.newArrayList(keys.split(","));
+			}
 			Map<String, Object> result = Maps.newHashMap();
-			for (String key : xs.keySet()) {
+			for (String key : set) {
 				List<Float> x = xs.get(key);
 				List<Float> y = ys.get(key);
 				if (x == null || y == null || x.size() < step) {
@@ -91,6 +100,15 @@ public class UiServer extends NanoHTTPD implements UiServerGrpc.UiServer {
                 }
 				result.put(key, tmp);
 			}
+			try {
+				return newFixedLengthResponse(objectMapper.writeValueAsString(result));
+			} catch (JsonProcessingException e) {
+				return newFixedLengthResponse(e.getMessage());
+			}
+		} else if("list_graph".equals(params.get("act"))) {
+			// /act=list_graph
+			Map<String, Object> result = Maps.newHashMap();
+			result.put("graphs", ys.keySet());
 			try {
 				return newFixedLengthResponse(objectMapper.writeValueAsString(result));
 			} catch (JsonProcessingException e) {
