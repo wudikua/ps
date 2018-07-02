@@ -12,6 +12,7 @@ import org.jblas.MatrixFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import util.MatrixUtil;
+import visual.UiClient;
 
 import java.util.List;
 import java.util.Map;
@@ -90,6 +91,7 @@ public class LRLayer extends Layer {
 		} else {
 			this.A = Z;
 		}
+		UiClient.ins().plot(name+".mean", this.A.mean(), Context.step.get());
 		return this.A;
 	}
 

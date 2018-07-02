@@ -103,7 +103,7 @@ public class UiServer extends NanoHTTPD implements UiServerGrpc.UiServer {
 
 	@Override
 	public void plot(PlotMessage request, StreamObserver<PlotMessage> responseObserver) {
-	    logger.info("plot {}", request.getId());
+	    logger.debug("plot {}", request.getId());
 		String key = request.getId();
 		List<Float> y = ys.putIfAbsent(key, Lists.newArrayList());
 		List<Float> x = xs.putIfAbsent(key, Lists.newArrayList());

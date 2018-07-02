@@ -97,11 +97,6 @@ public class Trainer {
 			// report meta
 			long step = Context.step.incrementAndGet();
 			UiClient.ins().plot("loss", loss / Context.thread, step);
-			UiClient.ins().plot("fc0.weights.0", KVStore.ins().get("fc0.weights").get(0 , 0), step);
-			UiClient.ins().plot("fc0.bias.0", KVStore.ins().get("fc0.bias").get(0, 0), step);
-
-			UiClient.ins().plot("fc0.weights.mean", KVStore.ins().get("fc0.weights").mean(), step);
-			UiClient.ins().plot("fc0.bias.mean", KVStore.ins().get("fc0.bias").mean(), step);
 		}
 	}
 
