@@ -39,6 +39,8 @@ public class Context {
 
 	public static volatile String psHost;
 
+	public static volatile String psAddrs;
+
 	public static volatile int uiPort;
 
 	public static volatile String uiHost;
@@ -54,7 +56,7 @@ public class Context {
 			return;
 		}
 		inited = true;
-		if ("dist".equals(System.getProperty("mode", "dist"))) {
+		if ("dist".equals(System.getProperty("mode", "stand"))) {
 			mode = Mode.DISTRIBUTED;
 		} else {
 			mode = Mode.STANDALONE;
@@ -68,6 +70,7 @@ public class Context {
 		workerNum = Integer.parseInt((System.getProperty("workerNum", "1")));
 		psPort = Integer.parseInt((System.getProperty("psPort", "8890")));
 		psHost = System.getProperty("psHost", "localhost");
+		psAddrs = System.getProperty("psAddrs", "localhost:8890");
 		uiPort = Integer.parseInt((System.getProperty("uiPort", "8990")));
 		uiHost = System.getProperty("uiHost", "localhost");
 		try {

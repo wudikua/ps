@@ -24,6 +24,10 @@ public class PSClient {
 
 	net.PSGrpc.PSFutureStub stub;
 
+	String host;
+
+	int port;
+
 	public PSClient() {
 		this(Context.psHost, Context.psPort);
 	}
@@ -31,6 +35,8 @@ public class PSClient {
 	public PSClient(String host, int port) {
 		channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build();
 		stub = net.PSGrpc.newFutureStub(channel).withCompression("gzip");
+		this.host = host;
+		this.port = port;
 	}
 
 	public void close() {

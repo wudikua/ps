@@ -12,6 +12,8 @@ import com.google.common.util.concurrent.SettableFuture;
 import context.Context;
 import lombok.Data;
 import net.PSClient;
+import net.PSRouterClient;
+import org.apache.commons.lang3.StringUtils;
 import org.jblas.FloatMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,8 +53,12 @@ public class KVStore implements Runnable {
 			client = new ThreadLocal<>().withInitial(new Supplier<PSClient>() {
 				@Override
 				public PSClient get() {
-					return new PSClient();
-				}
+					if (StringUtils.isNotBlank(Context.psAddrs)) {
+						return new PSRouterClient();
+					} else {
+						return new PSClient();
+					}
+ 				}
 			});
 			Executors.newSingleThreadExecutor().submit(this);
 		}
