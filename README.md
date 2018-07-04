@@ -38,6 +38,8 @@
 ![](./src/main/resources/ui.jpg "Loss变化")
 
 
+## 包概括
+
 - __activations__
 
     激活函数，目前支持Sigmoid，Relu，LeakyRelu
