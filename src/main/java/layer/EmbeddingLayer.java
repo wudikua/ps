@@ -37,8 +37,9 @@ public class EmbeddingLayer extends Layer {
 			EmbeddingField layer = embeddingFields.get(i);
 
 			FloatMatrix embed = layer.forward(E.getRow(i).toArray());
-
-			UiClient.ins().plot(layer.getName()+".mean", embed.mean(), Context.step.get());
+			if (i<3) {
+				UiClient.ins().plot(layer.getName() + ".mean", embed.mean(), Context.step.get());
+			}
 			// 每个域embedding以后的结果合并到结果中
 			MatrixUtil.appendRows(i * embeddingFields.get(0).getOutputDims(), EX, embed);
 		}

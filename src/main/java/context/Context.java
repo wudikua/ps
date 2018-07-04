@@ -2,6 +2,7 @@ package context;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
@@ -51,6 +52,8 @@ public class Context {
 
 	public static String host;
 
+	public static int logRandom;
+
 	public static void init() {
 		if (inited) {
 			return;
@@ -62,6 +65,7 @@ public class Context {
 			mode = Mode.STANDALONE;
 		}
 		nTermDump = Integer.parseInt((System.getProperty("nTermDump", "20")));
+		logRandom = Integer.parseInt((System.getProperty("logRandom", "10")));
 		finish = false;
 		dump = false;
 		thread = Integer.parseInt(System.getProperty("thread", String.valueOf(Runtime.getRuntime().availableProcessors())));
@@ -93,5 +97,9 @@ public class Context {
 
 	public static boolean isStandalone() {
 		return mode.equals(Mode.STANDALONE);
+	}
+
+	public static boolean log_random() {
+		return (logRandom > ThreadLocalRandom.current().nextInt(999));
 	}
 }

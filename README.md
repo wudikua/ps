@@ -2,14 +2,17 @@
 
     本项目使用非常少的代码编写了深度学习训练的全过程，有完整的结构，通过面向对象的封装，在算法上有一定扩展性，不仅支持单机模式还支持分布式模式
 
-    使用java实现的dnn训练框架，底层矩阵库使用Jblas(https://github.com/mikiobraun/jblas)，参数服务器使用Grpc+protobuf
+    使用java实现的dnn训练框架，底层矩阵库使用Jblas(https://github.com/mikiobraun/jblas)，参数服务器使用Grpc+protobuf，ui方面使用ploty.js+nanohttpd
 
     支持单机多CPU
 
-    支持分布式
+    支持分布式，多worker，多ps自定义负载均衡
+    
+    支持同步更新和异步更新
 
     实现FNN模型和Wide And Deep模型
-
+    
+    UI Server可视化图表
 
 ## 架构
 
@@ -28,8 +31,11 @@
 
 ## 代码结构
 
-
 ![](./src/main/resources/code.png "代码结构")
+
+## 可视化
+
+![](./src/main/resources/ui.jpg "Loss变化")
 
 
 - __activations__
@@ -52,11 +58,19 @@
     
     - -DisPs 分布式模式下当前节点是否是参数服务器
     
+    - -DisAsync 分布式模式下是否异步更新
+    
     - -DworkerNum 分布式模式下worker数量
     
     - -DpsPort 参数服务器端口号
     
     - -DpsHost 参数服务器端host地址
+    
+    - -DpsAddrs 参数服务器集群，eg:localhost:2081,localhost:2082
+    
+    - -DuiPort 可视化服务器端口号
+        
+    - -DuiHost 可视化服务器host地址
 
 - __data__
 
@@ -112,6 +126,8 @@
 
     PSClient，访问参数服务器的客户端，主要API有三个
     
+    PSRouterClient，当PS为集群的时候使用，通过Router路由key
+    
     getList取参数，updateList更新参数，push推送梯度，barrier请求参数服务器是否继续下一轮训练
     
     PServer，参数服务器，实现PSClient的主要方法，将参数保存在KVStore内存中
@@ -130,15 +146,24 @@
 
 - __update__
 
-    更新参数，实现了固定学习率更新和Adam更新，其中Adam通过本地map存储历史值
+    更新参数，实现了固定学习率更新和Adam，Ftrl更新，其中Adam，Ftrl通过本地map存储历史状态
 
 - __util__
 
     MatrixUtil，现有矩阵库操作的扩容，以及proto中定义矩阵的互相转换
+    
+- __visual__
+
+    UIServer，一个http + grpc服务器，接收训练worker或者ps的打点数据
+    
+    UIClient，训练中的打点工具，主要使用plot方法，打点后自动在UI服务器上展示 
 
 - __resource/proto/ps.proto__
 
     因为网络使用的是GRPC + protobuf的方式，这个文件为参数服务器的接口定义
 
+- __resource/proto/ui.proto__
+
+    ui服务器接口定义
 
 

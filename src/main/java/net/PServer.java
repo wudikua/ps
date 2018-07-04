@@ -163,9 +163,9 @@ public class PServer implements net.PSGrpc.PS, Runnable {
 
 	public void push(GradientMessage request, StreamObserver<GradientMessage> responseObserver) {
 		String key = request.getGradient().getKey();
-		if (!request.getGradient().getKey().contains("emF")) {
-			logger.info("update {}", key);
-		}
+//		if (!request.getGradient().getKey().contains("emF")) {
+//			logger.info("update {}", key);
+//		}
 		Updater updater = updaterMap.get(request.getUpdaterKey());
 		if (updater == null) {
 			logger.error("updater {} is null", request.getUpdaterKey());
@@ -173,7 +173,16 @@ public class PServer implements net.PSGrpc.PS, Runnable {
 			responseObserver.onCompleted();
 			return;
 		}
-
+		if (request.getIsAsync()) {
+			// 全异步更新参数
+			store.sum(key, MatrixUtil.ProtoMatrix_2_FloatMatrix(request.getGradient()));
+			store.update(updater, key);
+			GradientMessage.Builder resp = GradientMessage.newBuilder();
+			responseObserver.onNext(resp.build());
+			responseObserver.onCompleted();
+			return;
+		}
+		// 同步更新
 		store.sum(key, MatrixUtil.ProtoMatrix_2_FloatMatrix(request.getGradient()));
 		updateKeysLock.readLock().lock();
 		if (!updateKeys.containsKey(key)) {
@@ -206,33 +215,21 @@ public class PServer implements net.PSGrpc.PS, Runnable {
 
 	public void run() {
 		if (Context.isPsAsync) {
-			while (true) {
-				long step = globalStep.get();
-				long wStep = workerStep.get();
-				if (wStep > step + this.workerNum) {
-					psUpdate();
-				}
+			return;
+		}
+		while (true) {
+			synchronized (this) {
 				try {
-					Thread.sleep(100);
+					// 等待barrier的通知
+					logger.info("wait workers finish");
+					this.wait();
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
-			}
-		} else {
-			while (true) {
-				synchronized (this) {
-					try {
-						// 等待barrier的通知
-						logger.info("wait workers finish");
-						this.wait();
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-					psUpdate();
-					synchronized (globalStep) {
-						// 通知所有barrier
-						globalStep.notifyAll();
-					}
+				psUpdate();
+				synchronized (globalStep) {
+					// 通知所有barrier
+					globalStep.notifyAll();
 				}
 			}
 		}
@@ -244,6 +241,7 @@ public class PServer implements net.PSGrpc.PS, Runnable {
 		logger.info("barrier step {} wStep {}", step, wStep);
 		if (Context.isPsAsync) {
 			// 不阻塞
+			globalStep.incrementAndGet();
 			responseObserver.onNext(BarrierMessage.newBuilder().setResp(success).build());
 			responseObserver.onCompleted();
 			return;

@@ -192,7 +192,7 @@ public class KVStore implements Runnable {
 		}
 	}
 
-	public void update(Updater updater, String key) {
+	public synchronized void update(Updater updater, String key) {
 		FloatMatrix g = sum.get(key).divi(sumCnt.get(key).get());
 		if (key.contains("emF13.28305")) {
 			logger.info("key {} data {}  g {}", key, store.get(key).data, g);

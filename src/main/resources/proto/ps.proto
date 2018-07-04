@@ -40,7 +40,7 @@ message GetListMessage {
 message GetMessage {
     RequestMeta meta = 1;
     Matrix weights = 2;
-    Resp resp = 3;
+    Resp resp = 4;
 }
 
 message UpdateMessage {
@@ -60,8 +60,9 @@ message UpdateListMessage {
 message GradientMessage {
     RequestMeta meta = 1;
     Matrix  gradient = 2;
-    Resp resp = 3;
+    bool isAsync = 3;
     string updaterKey = 4;
+    Resp resp = 5;
 }
 
 message BarrierMessage {

@@ -156,6 +156,7 @@ public class PSClient {
 			Future<GradientMessage> future = stub.push(GradientMessage.newBuilder()
 					.setMeta(RequestMeta.newBuilder().setHost(Context.host).build())
 					.setUpdaterKey(updaterKey)
+					.setIsAsync(Context.isPsAsync)
 					.setGradient(MatrixUtil.FloatMatrix_2_ProtoMatrix(key, gradient)).build());
 			if (!async) {
 				GradientMessage result = future.get();
