@@ -10,7 +10,7 @@
     
     支持同步更新和异步更新
 
-    实现FNN模型和Wide And Deep模型
+    实现embdding+全链接模型和Wide And Deep模型
     
     UI Server可视化图表
 
