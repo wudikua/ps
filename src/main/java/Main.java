@@ -52,8 +52,8 @@ public class Main {
 		Trainer trainer = new Trainer(Context.thread, new Callable<Model>() {
 			@Override
 			public Model call() throws Exception {
-//				return DNN.buildModel(23, 10, 45, new int[]{1000, 100, 1});
-				return WideDeepNN.buildModel(23, 10, 45, new int[]{1000, 100, 1}, wideSize);
+				return DNN.buildModel(23, 10, 45, new int[]{100, 10, 1});
+//				return WideDeepNN.buildModel(23, 10, 45, new int[]{1000, 100, 1}, wideSize);
 			}
 		});
 		for (int epoch = 0; epoch < 100 && !Context.finish; epoch++) {

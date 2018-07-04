@@ -66,8 +66,7 @@ public class WideDeepNN implements Model {
 			Context.dump = false;
 		}
 		if (lossVal <= CrossEntropy.slim || Float.isNaN(lossVal)) {
-			Context.finish = true;
-			logger.info("\n\nP:{} \nY:{} \n\n", P, Y, delta);
+			logger.info("\n\nP:{} \nY:{} \nD:{}\n", P.getRange(0, Math.min(20, P.columns)), Y.getRange(0, Math.min(20, Y.columns)), delta.getRange(0, Math.min(20, delta.columns)));
 			logger.info("Oh Yeah lossVal is too slim !!! model train success");
 			return lossVal;
 		}
