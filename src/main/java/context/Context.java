@@ -3,20 +3,21 @@ package context;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
 public class Context {
-	public static ThreadLocal<Boolean> training = new ThreadLocal<Boolean>();
 
-	public static ThreadLocal<AtomicLong> term = new ThreadLocal<>().withInitial(new Supplier<AtomicLong>() {
-		@Override
-		public AtomicLong get() {
-			return new AtomicLong(0);
-		}
-	});
+	public static ThreadLocal<Integer> modelIndex = new ThreadLocal<>();
 
-	public static long nTermDump;
+	public static enum Stat {
+		TRAINING, PREDICTING, LOSS_SURFACE_EVAL
+	}
+
+	public static volatile Stat status = Stat.TRAINING;
+
+	public static volatile long nTermDump;
 
 	public static volatile boolean finish;
 
@@ -33,6 +34,8 @@ public class Context {
 	public static volatile boolean isPsAsync;
 
 	public static volatile int workerNum;
+
+	public static volatile boolean isMajor;
 
 	public static int thread;
 
@@ -67,11 +70,11 @@ public class Context {
 		nTermDump = Integer.parseInt((System.getProperty("nTermDump", "20")));
 		logRandom = Integer.parseInt((System.getProperty("logRandom", "10")));
 		finish = false;
-		dump = false;
 		thread = Integer.parseInt(System.getProperty("thread", String.valueOf(Runtime.getRuntime().availableProcessors())));
 		isPs = "1".equals(System.getProperty("ps", "0"));
 		isPsAsync = "1".equals(System.getProperty("isPsAsync", "0"));
 		workerNum = Integer.parseInt((System.getProperty("workerNum", "1")));
+		isMajor = "1".equals(System.getProperty("isMajor", "1"));
 		psPort = Integer.parseInt((System.getProperty("psPort", "8890")));
 		psHost = System.getProperty("psHost", "localhost");
 		psAddrs = System.getProperty("psAddrs", "localhost:8890");
@@ -84,6 +87,18 @@ public class Context {
 			}
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
+		}
+	}
+
+	public static boolean isTraining() {
+		return status.equals(Stat.TRAINING);
+	}
+
+	public static boolean isReportUi() {
+		if (isStandalone()) {
+			return modelIndex.get() == 0;
+		} else {
+			return isMajor && modelIndex.get() == 0;
 		}
 	}
 

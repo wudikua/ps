@@ -87,7 +87,9 @@ public class FcLayer extends Layer {
 		} else {
 			this.A = Z;
 		}
-		UiClient.ins().plot(name+".mean", this.A.mean(), Context.step.get());
+		if (Context.isTraining() && Context.isReportUi()) {
+			UiClient.ins().plot(name + ".output.mean", this.A.mean(), Context.step.get());
+		}
 		return this.A;
 	}
 

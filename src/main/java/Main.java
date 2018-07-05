@@ -76,27 +76,36 @@ public class Main {
 					datas.put("Y", d.getKey().getY());
 					dataList.add(datas);
 				}
-				trainer.run(dataList);
-				if (n ++ == 100) {
-					Context.dump = true;
-					n = 0;
-				}
+				trainer.train(dataList);
 			}
 			logger.info("begin compute auc...");
 			List<Pair<Double, Double>> data = new ArrayList<Pair<Double, Double>>();
-			while (true) {
-				Pair<TestDataSet.MatrixData, Boolean> tData = TestDataSet.fromStream(test, Integer.parseInt(System.getProperty("batch", "5000")));
-				if (!tData.getValue()) {
-					break;
+			boolean breakPredict = false;
+			while (!breakPredict) {
+				List<Map<String, FloatMatrix>> dataList = Lists.newArrayList();
+				List<FloatMatrix> y = Lists.newArrayList();
+				for (int i=0; i<Context.thread; i++) {
+					Pair<TestDataSet.MatrixData, Boolean> d = TestDataSet.fromStream(test, Integer.parseInt(System.getProperty("batch", "500")));
+					if (!d.getValue()) {
+						logger.info("data read eof");
+						breakPredict = true;
+						break;
+					}
+					Map<String, FloatMatrix> datas = Maps.newHashMap();
+					datas.put("E", d.getKey().getE());
+					datas.put("X", d.getKey().getX());
+					datas.put("W", MatrixUtil.hash(d.getKey().getE(), wideSize));
+					y.add(d.getKey().getY());
+					dataList.add(datas);
 				}
-				float[] y = tData.getKey().getY().toArray();
-				Map<String, FloatMatrix> datas = Maps.newHashMap();
-				datas.put("E", tData.getKey().getE());
-				datas.put("X", tData.getKey().getX());
-				datas.put("W", tData.getKey().getX());
-				float[] p = trainer.getTrainResult().predict(datas).toArray();
-				for (int i=0; i<y.length; i++) {
-					data.add(new MutablePair<Double, Double>((double) p[i], (double) y[i]));
+				FloatMatrix[] ps = trainer.predict(dataList);
+				for (int i=0; i<y.size(); i++) {
+					if (ps[i] == null) {
+						continue;
+					}
+					for (int j=0; j<y.get(i).length; j++) {
+						data.add(new MutablePair<Double, Double>((double) ps[i].data[j], (double) y.get(i).data[j]));
+					}
 				}
 			}
 			AUC auc = new AUC(data);

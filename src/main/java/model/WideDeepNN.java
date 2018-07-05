@@ -57,13 +57,14 @@ public class WideDeepNN implements Model {
 		FloatMatrix delta = loss.backward(P , Y);
 		logger.debug("\nP {}\nY {}\ndelta {}", P, Y, delta);
 		logger.info("LOSS is {}", lossVal);
-		if (Context.term.get().incrementAndGet() % Context.nTermDump == 0) {
+		if (Context.step.get() % Context.nTermDump == 0) {
 			AUC auc = new AUC(P.toArray(), Y.toArray());
 			double a = auc.calculate();
 			logger.info("Train AUC {}", a);
-			UiClient.ins().plot("Train_AUC", (float)a, Context.step.get());
+			if (Context.isReportUi()) {
+				UiClient.ins().plot("Train_AUC", (float) a, Context.step.get());
+			}
 			logger.info("\n\nP:{} \nY:{} \nD:{}\n", P.getRange(0, Math.min(20, P.columns)), Y.getRange(0, Math.min(20, Y.columns)), delta.getRange(0, Math.min(20, delta.columns)));
-			Context.dump = false;
 		}
 		if (lossVal <= CrossEntropy.slim || Float.isNaN(lossVal)) {
 			logger.info("\n\nP:{} \nY:{} \nD:{}\n", P.getRange(0, Math.min(20, P.columns)), Y.getRange(0, Math.min(20, Y.columns)), delta.getRange(0, Math.min(20, delta.columns)));
