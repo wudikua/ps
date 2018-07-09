@@ -47,7 +47,7 @@ public class LossSurface {
             model.update();
             FloatMatrix p = model.predict(data);
             float val = lossFunc.forward(p, y);
-            UiClient.ins().plot("loss_surface", val, scale);
+            UiClient.ins().plot("loss_surface_"+Context.step, val, i);
             logger.info("plot {} {}", i, val);
         }
     }
