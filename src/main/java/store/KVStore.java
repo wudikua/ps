@@ -39,6 +39,9 @@ public class KVStore implements Runnable {
 	// 单机版使用
 	private Map<String, FloatMatrix> store = Maps.newConcurrentMap();
 
+	// 存储初始权重 loss surface计算时使用
+	private Map<String, FloatMatrix> storeInit = Maps.newConcurrentMap();
+
 	// PS架构使用
 	private ThreadLocal<PSClient> client;
 
@@ -147,6 +150,9 @@ public class KVStore implements Runnable {
 		}
 		// 单机
 		if (store.containsKey(key)) {
+			if (Context.status == Context.Stat.LOSS_SURFACE_EVAL) {
+				return storeInit.get(key).mul(Context.weightsScale).addi(store.get(key).mul(1-Context.weightsScale));
+			}
 			return store.get(key);
 		}
 		return create(key, init);
@@ -175,6 +181,7 @@ public class KVStore implements Runnable {
 		try {
 			FloatMatrix m = init.call();
 			store.put(key, m);
+			storeInit.put(key, m.dup());
 			return m;
 		} catch (Exception e) {
 			e.printStackTrace();

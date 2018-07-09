@@ -15,6 +15,8 @@ public class Context {
 		TRAINING, PREDICTING, LOSS_SURFACE_EVAL
 	}
 
+	public static volatile float weightsScale;
+
 	public static volatile Stat status = Stat.TRAINING;
 
 	public static volatile long nTermDump;
@@ -22,6 +24,7 @@ public class Context {
 	public static volatile boolean finish;
 
 	public static volatile boolean dump;
+
 
 	public static enum Mode {
 		STANDALONE, DISTRIBUTED

@@ -81,6 +81,8 @@
 - __evaluate__
 
     AUC 计算auc工具
+    
+    LossSurface 通过对权重做缩放，计算模型的auc变化
 
 - __layer__
 
@@ -135,6 +137,8 @@
     PServer，参数服务器，实现PSClient的主要方法，将参数保存在KVStore内存中
     
     通过globalStep和workerStep的差值控制是否barrier
+    
+    当ps的工作模式为异步的时候，push方法立刻更新梯度，无需等待
 
 - __store__
 
@@ -145,6 +149,8 @@
 - __train__
 
     Trainer 组织训练过程，分布式和单机都用这一个实现，通过环境变量做些不同的事
+
+    Trainer 通过Java中的线程池，支持多CPU并行训练和并行预估
 
 - __update__
 
