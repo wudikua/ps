@@ -1,22 +1,15 @@
 package train;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import context.Context;
-import data.TestDataSet;
-import javafx.scene.effect.FloatMap;
 import lombok.Data;
-import model.DNN;
 import model.Model;
-import org.apache.commons.lang3.tuple.Pair;
 import org.jblas.FloatMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import store.KVStore;
 import visual.UiClient;
-import visual.UiServer;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
@@ -31,52 +24,6 @@ public class Trainer {
 	private ExecutorService service;
 
 	private List<Model> models;
-
-	private static class TrainerThread implements Callable<Float> {
-		Map<String, FloatMatrix> datas;
-		Model nn;
-		int modelIndex;
-		public TrainerThread(int modelIndex , Model nn, Map<String, FloatMatrix> datas) {
-			this.modelIndex = modelIndex;
-			this.datas = datas;
-			this.nn = nn;
-		}
-
-		@Override
-		public Float call() throws Exception {
-			try {
-				Context.modelIndex.set(modelIndex);
-				return nn.train(datas);
-			} catch (Exception e) {
-				logger.error("trainer error", e);
-			}
-			return 0f;
-		}
-	}
-
-	private static class PredictThread implements Callable<FloatMatrix> {
-
-		Map<String, FloatMatrix> datas;
-		Model nn;
-		int modelIndex;
-
-		public PredictThread(int modelIndex, Model nn, Map<String, FloatMatrix> datas) {
-			this.modelIndex = modelIndex;
-			this.datas = datas;
-			this.nn = nn;
-		}
-
-		@Override
-		public FloatMatrix call() throws Exception {
-			try {
-				Context.modelIndex.set(modelIndex);
-				return nn.predict(datas);
-			} catch (Exception e) {
-				logger.error("trainer error", e);
-			}
-			return null;
-		}
-	}
 
 	public Trainer(int nThreads, Callable<Model> modelCallable) throws Exception {
 		this.thread = nThreads;
@@ -144,11 +91,6 @@ public class Trainer {
 		Model model = models.get(0);
 		logger.info("update model params");
 		KVStore.ins().update(model.getUpdater());
-		// update weights
-		for (int i=0; i< models.size(); i++) {
-			// 清理model中的权重
-			models.get(i).update();
-		}
 		// 清理缓存中的权重
 		KVStore.ins().clear();
 		if (loss != 0) {
