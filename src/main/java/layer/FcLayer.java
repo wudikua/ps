@@ -47,9 +47,6 @@ public class FcLayer extends Layer {
 				return MatrixUtil.rand(outputDims, 1, xavier);
 			}
 		};
-
-		weights = this.kvStore.get(this.name + ".weights", initW);
-		bias = this.kvStore.get(this.name + ".bias", initB);
 	}
 
 	// 构建多层全链接层，最后一层默认使用sigmoid
@@ -107,7 +104,7 @@ public class FcLayer extends Layer {
 		kvStore.sum(name+".bias", biasGradient);
 		weightsGradient = (delta.mmul(pre.getA().transpose())).divi(delta.columns);
 		kvStore.sum(name+".weights", weightsGradient);
-		// update delta
+		// pullWeights delta
 		this.delta = weights.transpose().mmul(delta);
 		return this.delta;
 	}

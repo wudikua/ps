@@ -6,9 +6,15 @@ import model.Model;
 import org.jblas.FloatMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import train.PredictThread;
 import visual.UiClient;
 
+import java.math.BigDecimal;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class LossSurface {
 
@@ -25,6 +31,8 @@ public class LossSurface {
 
     // 模型
     Model model;
+
+	ExecutorService executor = Executors.newSingleThreadExecutor();
 
     public LossSurface(Map<String, FloatMatrix> data, FloatMatrix y, Loss lossFunc, Model model) {
         this.data = data;
@@ -44,11 +52,14 @@ public class LossSurface {
         Context.status = Context.Stat.LOSS_SURFACE_EVAL;
         for (float i=min; i<max; i+=scale) {
             Context.weightsScale = i;
-            model.update();
-            FloatMatrix p = model.predict(data);
-            float val = lossFunc.forward(p, y);
-            UiClient.ins().plot("loss_surface_"+Context.step, val, i);
-            logger.info("plot {} {}", i, val);
+			try {
+				FloatMatrix p = executor.submit(new PredictThread(0, model, data)).get();
+				float val = lossFunc.forward(p, y);
+				logger.info("plot {} {}", new BigDecimal(i).setScale(2, 4).floatValue(), val);
+				UiClient.ins().plot("loss_surface_" + Context.step, val, new BigDecimal(i).setScale(2, 4).floatValue());
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
         }
     }
 }

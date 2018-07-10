@@ -79,7 +79,7 @@ public class WideDeepNN implements Model {
 		return lossVal;
 	}
 
-	public void update() {
+	public void pullWeights() {
 		for (int i=0; i<layers.size(); i++) {
 			layers.get(i).pullWeights();
 		}

@@ -7,7 +7,6 @@ import evaluate.LossSurface;
 import loss.CrossEntropy;
 import model.DNN;
 import model.Model;
-import model.WideDeepNN;
 import net.PServer;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -24,6 +23,7 @@ import util.MatrixUtil;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -35,8 +35,13 @@ public class Main {
 
 	public static final int wideSize = 100000;
 
+	static BufferedReader train;
+
+	static BufferedReader test;
+
 	public static void main(String args[]) throws Exception {
 		Context.init();
+		Context.thread = 1;
 		if (Context.isPServer()) {
 			// 启动PS进程
 			Updater updater = new AdamUpdater(0.005, 0.9, 0.999, Math.pow(10, -8));
@@ -47,9 +52,9 @@ public class Main {
 			server.start();
 			System.exit(0);
 		}
-		BufferedReader train = new BufferedReader(new FileReader(new File(System.getProperty("train",
+		train = new BufferedReader(new FileReader(new File(System.getProperty("train",
 				Main.class.getResource("").getPath()+"../../src/main/resources/train.txt"))));
-		BufferedReader test = new BufferedReader(new FileReader(new File(System.getProperty("test",
+		test = new BufferedReader(new FileReader(new File(System.getProperty("test",
 				Main.class.getResource("").getPath()+"../../src/main/resources/test.txt"))));
 		Trainer trainer = new Trainer(Context.thread, new Callable<Model>() {
 			@Override
@@ -60,75 +65,89 @@ public class Main {
 		});
 		for (int epoch = 0; epoch < 100 && !Context.finish; epoch++) {
 			logger.info("epoch {}", epoch);
-			int n = 0;
-			boolean eof = false;
-			while (!Context.finish && !eof) {
-				List<Map<String, FloatMatrix>> dataList = Lists.newArrayList();
-				for (int i=0; i<Context.thread; i++) {
-					Pair<TestDataSet.MatrixData, Boolean> d = TestDataSet.fromStream(train, Integer.parseInt(System.getProperty("batch", "100")));
-					if (!d.getValue()) {
-						logger.info("data read eof");
-						eof = true;
-						break;
-					}
-					Map<String, FloatMatrix> datas = Maps.newHashMap();
-					datas.put("E", d.getKey().getE());
-					datas.put("X", d.getKey().getX());
-					datas.put("W", MatrixUtil.hash(d.getKey().getE(), wideSize));
-					datas.put("Y", d.getKey().getY());
-					dataList.add(datas);
-				}
-				trainer.train(dataList);
-			}
-			logger.info("begin compute auc...");
-			List<Pair<Double, Double>> data = new ArrayList<Pair<Double, Double>>();
-			boolean breakPredict = false;
-			while (!breakPredict) {
-				List<Map<String, FloatMatrix>> dataList = Lists.newArrayList();
-				List<FloatMatrix> y = Lists.newArrayList();
-				for (int i=0; i<Context.thread; i++) {
-					Pair<TestDataSet.MatrixData, Boolean> d = TestDataSet.fromStream(test, Integer.parseInt(System.getProperty("batch", "1000")));
-					if (!d.getValue()) {
-						logger.info("data read eof");
-						breakPredict = true;
-						break;
-					}
-					Map<String, FloatMatrix> datas = Maps.newHashMap();
-					datas.put("E", d.getKey().getE());
-					datas.put("X", d.getKey().getX());
-					datas.put("W", MatrixUtil.hash(d.getKey().getE(), wideSize));
-					y.add(d.getKey().getY());
-					dataList.add(datas);
-				}
-				FloatMatrix[] ps = trainer.predict(dataList);
-				for (int i=0; i<y.size(); i++) {
-					if (ps[i] == null) {
-						continue;
-					}
-					for (int j=0; j<y.get(i).length; j++) {
-						data.add(new MutablePair<Double, Double>((double) ps[i].data[j], (double) y.get(i).data[j]));
-					}
-				}
-			}
-			AUC auc = new AUC(data);
-			logger.info("AUC {}", auc.calculate());
+			train(trainer);
 
-			test = new BufferedReader(new FileReader(new File(System.getProperty("test",
-					Main.class.getResource("").getPath()+"../../src/main/resources/test.txt"))));
-			logger.info("compute loss surface");
-			Pair<TestDataSet.MatrixData, Boolean> d = TestDataSet.fromStream(test, Integer.parseInt(System.getProperty("batch", "5000")));
-			Map<String, FloatMatrix> datas = Maps.newHashMap();
-			datas.put("E", d.getKey().getE());
-			datas.put("X", d.getKey().getX());
-			datas.put("W", MatrixUtil.hash(d.getKey().getE(), wideSize));
-			LossSurface lossSurface = new LossSurface(datas, d.getKey().getY(), new CrossEntropy(), trainer.getTrainResult());
-			lossSurface.plot();
-			logger.info("loss surface draw finish");
+			auc(trainer);
 
-			train = new BufferedReader(new FileReader(new File(System.getProperty("train",
-					Main.class.getResource("").getPath()+"../../src/main/resources/train.txt"))));
-			test = new BufferedReader(new FileReader(new File(System.getProperty("test",
-					Main.class.getResource("").getPath()+"../../src/main/resources/test.txt"))));
+			loss_surface(trainer);
 		}
+	}
+
+	private static void loss_surface(Trainer trainer) throws IOException {
+		logger.info("compute loss surface");
+		Pair<TestDataSet.MatrixData, Boolean> d = TestDataSet.fromStream(test, Integer.parseInt(System.getProperty("batch", "100")));
+		Map<String, FloatMatrix> datas = Maps.newHashMap();
+		datas.put("E", d.getKey().getE());
+		datas.put("X", d.getKey().getX());
+		datas.put("W", MatrixUtil.hash(d.getKey().getE(), wideSize));
+		LossSurface lossSurface = new LossSurface(datas, d.getKey().getY(), new CrossEntropy(), trainer.getTrainResult());
+		lossSurface.plot();
+		logger.info("loss surface draw finish");
+		test.close();
+		test = new BufferedReader(new FileReader(new File(System.getProperty("test",
+				Main.class.getResource("").getPath()+"../../src/main/resources/test.txt"))));
+	}
+
+	private static void train(Trainer trainer) throws IOException {
+		boolean eof = false;
+		while (!Context.finish && !eof) {
+			List<Map<String, FloatMatrix>> dataList = Lists.newArrayList();
+			for (int i=0; i<Context.thread; i++) {
+				Pair<TestDataSet.MatrixData, Boolean> d = TestDataSet.fromStream(train, Integer.parseInt(System.getProperty("batch", "10000")));
+				if (!d.getValue()) {
+					logger.info("data read eof");
+					eof = true;
+					break;
+				}
+				Map<String, FloatMatrix> datas = Maps.newHashMap();
+				datas.put("E", d.getKey().getE());
+				datas.put("X", d.getKey().getX());
+				datas.put("W", MatrixUtil.hash(d.getKey().getE(), wideSize));
+				datas.put("Y", d.getKey().getY());
+				dataList.add(datas);
+			}
+			trainer.train(dataList);
+		}
+		train.close();
+		train = new BufferedReader(new FileReader(new File(System.getProperty("train",
+				Main.class.getResource("").getPath()+"../../src/main/resources/train.txt"))));
+	}
+
+	private static void auc(Trainer trainer) throws IOException {
+		logger.info("begin compute auc...");
+		List<Pair<Double, Double>> data = new ArrayList<Pair<Double, Double>>();
+		boolean breakPredict = false;
+		while (!breakPredict) {
+			List<Map<String, FloatMatrix>> dataList = Lists.newArrayList();
+			List<FloatMatrix> y = Lists.newArrayList();
+			for (int i=0; i<Context.thread; i++) {
+				Pair<TestDataSet.MatrixData, Boolean> d = TestDataSet.fromStream(test, Integer.parseInt(System.getProperty("batch", "1000")));
+				if (!d.getValue()) {
+					logger.info("data read eof");
+					breakPredict = true;
+					break;
+				}
+				Map<String, FloatMatrix> datas = Maps.newHashMap();
+				datas.put("E", d.getKey().getE());
+				datas.put("X", d.getKey().getX());
+				datas.put("W", MatrixUtil.hash(d.getKey().getE(), wideSize));
+				y.add(d.getKey().getY());
+				dataList.add(datas);
+			}
+			FloatMatrix[] ps = trainer.predict(dataList);
+			for (int i=0; i<y.size(); i++) {
+				if (ps[i] == null) {
+					continue;
+				}
+				for (int j=0; j<y.get(i).length; j++) {
+					data.add(new MutablePair<Double, Double>((double) ps[i].data[j], (double) y.get(i).data[j]));
+				}
+			}
+		}
+		AUC auc = new AUC(data);
+		logger.info("AUC {}", auc.calculate());
+		test.close();
+		test = new BufferedReader(new FileReader(new File(System.getProperty("test",
+				Main.class.getResource("").getPath()+"../../src/main/resources/test.txt"))));
 	}
 }

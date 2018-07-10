@@ -12,7 +12,7 @@ public interface Model {
 
 	public FloatMatrix predict(Map<String, FloatMatrix> datas);
 
-	public void update();
+	public void pullWeights();
 
 	public Map<String, Updater> getUpdater();
 }
