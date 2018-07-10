@@ -9,32 +9,37 @@
 <script>
 
     window.charts = {};
-    window.step = 0;
-
+    window.step = {};
     $(document).ready(function(){
-        setInterval("repaint()", 1000);
+        setInterval(function () {
+            htmlobj = $.ajax({
+                url:"/?act=data",
+                async:false,
+                type:'post',
+                contentType: 'application/json;charset=utf-8',
+                dataType:'json',
+                data:JSON.stringify(window.step)
+            });
+            obj = JSON.parse(htmlobj.responseText);
+            Object.keys(obj).sort();
+            $.each(obj, function(id, val){
+                if (val.x == null || val.x.length == 0) {
+                    return;
+                }
+                var update = {
+                    y: [val.x],
+                    x: [val.y]
+                };
+                c = window.charts[id];
+                if (c == null || c == undefined) {
+                    newChart(id);
+                }
+                Plotly.extendTraces(id, update, [0]);
+                window.step[id] = update.x[0][update.x[0].length-1];
+            });
+        }, 1000);
     });
-    function repaint() {
-        htmlobj = $.ajax({url:"/?act=data&step="+step, async:false});
-        obj = JSON.parse(htmlobj.responseText);
-        s = 0;
-        Object.keys(obj).sort();
-        $.each(obj, function(id, val){
-            var update = {
-                y: [val.x],
-                x: [val.y]
-            };
-            c = window.charts[id];
-            if (c == null || c == undefined) {
-                newChart(id);
-            }
-            Plotly.extendTraces(id, update, [0]);
-            if (s == 0) {
-                s += val.x.length;
-            }
-        });
-        step += s;
-    }
+
 
     function newChart(id) {
         $(document.body).append("<div id='"+id+"' style='width: 1000px; height: 400px;'></div>");
@@ -49,6 +54,7 @@
             title: id,
         };
         window.charts[id]= Plotly.newPlot(id, [trace], layout);
+        window.step[id] = 0;
         return window.charts[id];
     }
 </script>

@@ -16,15 +16,13 @@ import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
 import lombok.Data;
 import net.PServer;
+import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -75,47 +73,53 @@ public class UiServer extends NanoHTTPD implements UiServerGrpc.UiServer {
 	}
 
 	public Response serve(IHTTPSession session) {
-		Map<String, String> params = session.getParms();
-		if ("data".equals(params.get("act"))) {
-			// /act=data&setp=1&key=fc0,fc1
-			String keys = params.get("key");
-			int step = Integer.parseInt(params.get("step"));
-			Collection<String> set = xs.keySet();
-			if (StringUtils.isNotBlank(keys)) {
-				set = Lists.newArrayList(keys.split(","));
-			}
-			Map<String, Object> result = Maps.newHashMap();
-			for (String key : set) {
-				List<Float> x = xs.get(key);
-				List<Float> y = ys.get(key);
-				if (x == null || y == null || x.size() < step) {
-					continue;
+		try {
+			Map<String, String> params = session.getParms();
+			Map<String, String> body = new HashMap<String, String>();
+			session.parseBody(body);
+			if ("data".equals(params.get("act"))) {
+				// /act=data&key=fc0,fc1
+				String keys = params.get("key");
+				Map<String, Float> step = Maps.newHashMap();
+				try {
+					step = objectMapper.readValue(body.get("postData"), Map.class);
+				} catch (IOException e) {
+					e.printStackTrace();
 				}
-				Map<String, Object> tmp = Maps.newHashMap();
-				synchronized (x) {
-                    tmp.put("x", x.subList(step, x.size()));
-                }
-                synchronized (y) {
-                    tmp.put("y", y.subList(step, y.size()));
-                }
-				result.put(key, tmp);
-			}
-			try {
+				Collection<String> set = xs.keySet();
+				if (StringUtils.isNotBlank(keys)) {
+					set = Lists.newArrayList(keys.split(","));
+				}
+				Map<String, Object> result = Maps.newHashMap();
+				for (String key : set) {
+					List<Float> x = xs.get(key);
+					List<Float> y = ys.get(key);
+					if (x == null || y == null) {
+						continue;
+					}
+					Map<String, List<Float>> tmp = Maps.newHashMap();
+					tmp.put("x", Lists.newArrayList());
+					tmp.put("y", Lists.newArrayList());
+					for (int i = 0; i < y.size(); i++) {
+						if (!step.containsKey(key) || y.get(i) > NumberUtils.toFloat(String.valueOf(step.get(key)), 0f)) {
+							tmp.get("x").add(x.get(i));
+							tmp.get("y").add(y.get(i));
+						}
+					}
+					result.put(key, tmp);
+				}
 				return newFixedLengthResponse(objectMapper.writeValueAsString(result));
-			} catch (JsonProcessingException e) {
-				return newFixedLengthResponse(e.getMessage());
-			}
-		} else if("list_graph".equals(params.get("act"))) {
-			// /act=list_graph
-			Map<String, Object> result = Maps.newHashMap();
-			result.put("graphs", ys.keySet());
-			try {
+			} else if ("list_graph".equals(params.get("act"))) {
+				// /act=list_graph
+				Map<String, Object> result = Maps.newHashMap();
+				result.put("graphs", ys.keySet());
 				return newFixedLengthResponse(objectMapper.writeValueAsString(result));
-			} catch (JsonProcessingException e) {
-				return newFixedLengthResponse(e.getMessage());
+			} else {
+				return newFixedLengthResponse(TestDataSet.readToString(UiServer.class.getResource("").getPath() + "../../../src/main/resources/web/index.html"));
 			}
-		} else {
-			return newFixedLengthResponse(TestDataSet.readToString(UiServer.class.getResource("").getPath()+"../../../src/main/resources/web/index.html"));
+		} catch (Exception e) {
+			logger.error("http error", e);
+			return newFixedLengthResponse(e.getMessage());
 		}
 	}
 
