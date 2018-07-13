@@ -9,6 +9,8 @@
     支持分布式，多worker，多ps自定义负载均衡
     
     支持同步更新和异步更新
+    
+    支持二分类和多分类
 
     实现embdding+全链接模型和Wide And Deep模型
     
@@ -190,5 +192,16 @@
 - __resource/proto/ui.proto__
 
     ui服务器接口定义
+
+
+# TODO
+
+    数据读取，libsvm文件的标准化读取，异步数据队列，HDFS支持等
+    
+    特征处理，参考sklearn中的Preprocessing
+    
+    参数传输的压缩，学习quantize相关paper
+    
+    多分类的evalute，学习one-vs-all auc
 
 
