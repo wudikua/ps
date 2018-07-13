@@ -16,9 +16,9 @@
     
 ## 例子
     
-    运行 CTR.java 点击率预估例子，test auc在0.73左右
+    运行 CTR.java 点击率预估例子，test auc在0.71左右
     
-    运行 Mnist.java 手写输入例子，正确率在0.97左右
+    运行 Mnist.java 手写输入例子，正确率在0.92左右。如果从网上下载全量的mnist数据，正确率在0.98左右
     
     注意，根据运行的cpu core数量不同，结果略有差异，需要略微调整mini batch数量尽快收敛
 
@@ -45,6 +45,9 @@
 
 ![](./src/main/resources/ui.jpg "Loss变化")
 
+    需要启动UiServer，访问 localhost:8888 图表会随着训练过程动态刷新
+    
+    使用UiClient::plot() 方法可以在训练中进行打点，打点信息会异步的发送给UiServer，不会阻塞训练过程
 
 ## 包概括
 
