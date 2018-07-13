@@ -13,6 +13,14 @@
     实现embdding+全链接模型和Wide And Deep模型
     
     UI Server可视化图表
+    
+## 例子
+    
+    运行 CTR.java 点击率预估例子，test auc在0.73左右
+    
+    运行 Mnist.java 手写输入例子，正确率在0.97左右
+    
+    注意，根据运行的cpu core数量不同，结果略有差异，需要略微调整mini batch数量尽快收敛
 
 ## 架构
 
@@ -42,7 +50,7 @@
 
 - __activations__
 
-    激活函数，目前支持Sigmoid，Relu，LeakyRelu
+    激活函数，目前支持Sigmoid，Relu，LeakyRelu，Softmax
 
     forward，输入x，输出y
 
@@ -79,6 +87,8 @@
     TestDataSet 从文件读取libsvm数据，该模块还没有封装，以后会做成队列，在训练期间异步填充
 
 - __evaluate__
+
+    SoftmaxPrecision 多分类判读正确率
 
     AUC 计算auc工具
     
@@ -117,6 +127,8 @@
     计算损失，forward接口计算损失值，backward计算损失函数导数
     
     具体实现包括平方差损失和交叉熵损失
+    
+    多分类使用SoftmaxLoss
 
 - __model__
 
@@ -125,6 +137,8 @@
     DNN模型，离散特征通过embedding加上连续特征，合并以后放入多层全链接网络
     
     WideDeepNN模型，在DNN的基础上，在全链接网络的最后一层增加了Wide层
+    
+    FullConnectedNN模型，训练mnist使用的全链接模型
 
 - __net__
 

@@ -111,6 +111,36 @@ public class TestDataSet {
 		return new FileIterator(filename, Integer.parseInt(System.getProperty("batch", "3000")));
 	}
 
+	public static synchronized Pair<MatrixData, Boolean> fromMnistStream(BufferedReader reader, int N) throws IOException {
+		int nn = 0;
+		float[][] X = new float[784][N];
+		float[][] P = new float[1][N];
+		int col = 0;
+		boolean remind = true;
+		while (++nn <= N) {
+			String line = reader.readLine();
+			if (line == null) {
+				remind = false;
+				break;
+			}
+			try {
+				String[] cols = line.split(",");
+
+				// 从后向前取45个连续特征
+				for (int i = 1; i < cols.length; i++) {
+					X[i-1][col] = Float.parseFloat(cols[i]);
+				}
+				// 初始化label
+				P[0][col] = Integer.parseInt(cols[0]);
+				col++;
+			} catch (Exception e) {
+				e.printStackTrace();
+				System.out.println(line);
+			}
+		}
+		return new ImmutablePair(new MatrixData(new FloatMatrix(X), null, new FloatMatrix(P)), remind);
+	}
+
 	public static synchronized Pair<MatrixData, Boolean> fromStream(BufferedReader reader, int N) throws IOException {
 		int nn = 0;
 		float[][] E = new float[23][N];
