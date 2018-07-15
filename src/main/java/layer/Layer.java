@@ -68,4 +68,11 @@ public abstract class Layer {
 	public boolean isInput() {
 		return isInput;
 	}
+
+	@Override
+	public String toString() {
+		return "Layer{" +
+				"name='" + name + '\'' +
+				'}';
+	}
 }
