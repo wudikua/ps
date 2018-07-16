@@ -1,7 +1,7 @@
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import context.Context;
-import data.TestDataSet;
+import data.*;
 import evaluate.AUC;
 import evaluate.LossSurface;
 import evaluate.SoftmaxPrecision;
@@ -30,13 +30,47 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-public class Mnist {
+public class Mnist extends DataSet {
 
 	private static Logger logger = LoggerFactory.getLogger(CTR.class);
 
-	static BufferedReader train;
+	static DataSet trainSet;
 
-	static BufferedReader test;
+	static DataSet testSet;
+
+	public Mnist(Parser parser, DataSource source, int batch, int thread) {
+		super(parser, source, batch, thread);
+	}
+
+	public static class MnistParser implements Parser {
+		@Override
+		public List<Feature> parse(String line) {
+			List<Feature> result = Lists.newArrayList();
+			String[] cols = line.split(",");
+			for (int i=0; i<cols.length; i++) {
+				result.add(new Feature(i, Float.parseFloat(cols[i])));
+			}
+			return result;
+		}
+	}
+
+	@Override
+	public Map<String, FloatMatrix> parseFeature(List<List<Feature>> dataList) {
+		int N = dataList.size();
+		float[][] X = new float[784][N];
+		float[][] Y = new float[1][N];
+		for (int i=0; i<dataList.size(); i++) {
+			List<Feature> cols = dataList.get(i);
+			Y[0][i] = cols.get(0).toF();
+			for (int j = 1; j < cols.size(); j++) {
+				X[j-1][i] = cols.get(j).toF();
+			}
+		}
+		Map<String, FloatMatrix> result = Maps.newHashMap();
+		result.put("X", new FloatMatrix(X));
+		result.put("Y", new FloatMatrix(Y));
+		return result;
+	}
 
 	public static void main(String args[]) throws Exception {
 		Context.init();
@@ -51,10 +85,10 @@ public class Mnist {
 			server.start();
 			System.exit(0);
 		}
-		train = new BufferedReader(new FileReader(new File(System.getProperty("train",
-				CTR.class.getResource("").getPath()+"../../src/main/resources/mnist_train.csv"))));
-		test = new BufferedReader(new FileReader(new File(System.getProperty("test",
-				CTR.class.getResource("").getPath()+"../../src/main/resources/mnist_test.csv"))));
+		trainSet = new Mnist(new MnistParser(), new FileSource(new File(System.getProperty("train",
+				Mnist.class.getResource("").getPath()+"../../src/main/resources/mnist_train.csv"))), 1000, 1);
+		testSet = new Mnist(new MnistParser(), new FileSource(new File(System.getProperty("test",
+				Mnist.class.getResource("").getPath()+"../../src/main/resources/mnist_test.csv"))), 1000, 1);
 		Trainer trainer = new Trainer(Context.thread, new Callable<Model>() {
 			@Override
 			public Model call() throws Exception {
@@ -70,46 +104,33 @@ public class Mnist {
 	}
 
 	private static void train(Trainer trainer) throws IOException {
-		boolean eof = false;
-		while (!Context.finish && !eof) {
+		while (trainSet.hasNext()) {
 			List<Map<String, FloatMatrix>> dataList = Lists.newArrayList();
 			for (int i=0; i<Context.thread; i++) {
-				Pair<TestDataSet.MatrixData, Boolean> d = TestDataSet.fromMnistStream(train, Integer.parseInt(System.getProperty("batch", "1000")));
-				if (!d.getValue()) {
-					logger.info("data read eof");
-					eof = true;
-					break;
+				Map<String, FloatMatrix> datas = trainSet.next();
+				if (datas == null || datas.isEmpty()) {
+					continue;
 				}
-				Map<String, FloatMatrix> datas = Maps.newHashMap();
-				datas.put("X", d.getKey().getX());
-				datas.put("Y", d.getKey().getY());
 				dataList.add(datas);
 			}
 			trainer.train(dataList);
 		}
-		train.close();
-		train = new BufferedReader(new FileReader(new File(System.getProperty("train",
-				CTR.class.getResource("").getPath()+"../../src/main/resources/mnist_train.csv"))));
+		trainSet.reset();
 	}
 
 	private static void precision(Trainer trainer) throws IOException {
 		logger.info("begin compute precision...");
 		List<Float[]> p = Lists.newArrayList();
 		List<Float> l = Lists.newArrayList();
-		boolean breakPredict = false;
-		while (!breakPredict) {
+		while (testSet.hasNext()) {
 			List<Map<String, FloatMatrix>> dataList = Lists.newArrayList();
 			List<FloatMatrix> y = Lists.newArrayList();
 			for (int i=0; i<Context.thread; i++) {
-				Pair<TestDataSet.MatrixData, Boolean> d = TestDataSet.fromMnistStream(test, Integer.parseInt(System.getProperty("batch", "1000")));
-				if (!d.getValue()) {
-					logger.info("data read eof");
-					breakPredict = true;
-					break;
+				Map<String, FloatMatrix> datas = testSet.next();
+				if (datas == null || datas.isEmpty()) {
+					continue;
 				}
-				Map<String, FloatMatrix> datas = Maps.newHashMap();
-				datas.put("X", d.getKey().getX());
-				y.add(d.getKey().getY());
+				y.add(datas.get("Y"));
 				dataList.add(datas);
 			}
 			FloatMatrix[] ps = trainer.predict(dataList);
@@ -129,8 +150,6 @@ public class Mnist {
 		}
 		SoftmaxPrecision precision = new SoftmaxPrecision(l, p);
 		logger.info("Precision {}", precision.calculate());
-		test.close();
-		test = new BufferedReader(new FileReader(new File(System.getProperty("test",
-				CTR.class.getResource("").getPath()+"../../src/main/resources/mnist_test.csv"))));
+		testSet.reset();
 	}
 }

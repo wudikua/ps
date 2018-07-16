@@ -18,7 +18,7 @@ public class FileSource extends DataSource {
     }
 
     @Override
-    public void reset() {
+    public void resetInternal() {
         if (this.reader != null) {
             try {
                 this.reader.close();

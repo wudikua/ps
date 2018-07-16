@@ -1,7 +1,7 @@
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import data.TestDataSet;
+import data.*;
 import evaluate.AUC;
 import evaluate.LossSurface;
 import loss.CrossEntropy;
@@ -29,15 +29,43 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
 
-public class CTR {
+public class CTR extends DataSet {
 
 	private static Logger logger = LoggerFactory.getLogger(CTR.class);
 
 	public static final int wideSize = 100000;
 
-	static BufferedReader train;
+	static DataSet trainSet;
 
-	static BufferedReader test;
+	static DataSet testSet;
+
+	public CTR(Parser parser, DataSource source, int batch, int thread) {
+		super(parser, source, batch, thread);
+	}
+
+	@Override
+	public Map<String, FloatMatrix> parseFeature(List<List<Feature>> dataList) {
+		Map<String, FloatMatrix> map = Maps.newHashMap();
+		int N = dataList.size();
+		float[][] E = new float[23][N];
+		float[][] X = new float[45][N];
+		float[][] Y = new float[1][N];
+		for (int i=0; i<dataList.size(); i++) {
+			List<Feature> cols = dataList.get(i);
+			Y[0][i] = cols.get(0).toF();
+			for (int j=1; j<24; j++) {
+				E[j-1][i] = cols.get(j).getIdx();
+			}
+			for (int j=24; j<69; j++) {
+				X[j-24][i] = cols.get(j).toF();
+			}
+		}
+		map.put("X", new FloatMatrix(X));
+		map.put("E", new FloatMatrix(E));
+		map.put("W", MatrixUtil.hash(map.get("E"), wideSize));
+		map.put("Y", new FloatMatrix(Y));
+		return map;
+	}
 
 	public static void main(String args[]) throws Exception {
 		Context.init();
@@ -52,15 +80,15 @@ public class CTR {
 			server.start();
 			System.exit(0);
 		}
-		train = new BufferedReader(new FileReader(new File(System.getProperty("train",
-				CTR.class.getResource("").getPath()+"../../src/main/resources/train.txt"))));
-		test = new BufferedReader(new FileReader(new File(System.getProperty("test",
-				CTR.class.getResource("").getPath()+"../../src/main/resources/test.txt"))));
+		trainSet = new CTR(new LibsvmParser(), new FileSource(new File(System.getProperty("train",
+				CTR.class.getResource("").getPath()+"../../src/main/resources/train.txt"))), 1000, 1);
+
+		testSet = new CTR(new LibsvmParser(), new FileSource(new File(System.getProperty("test",
+				CTR.class.getResource("").getPath()+"../../src/main/resources/test.txt"))), 100, 1);
 		Trainer trainer = new Trainer(Context.thread, new Callable<Model>() {
 			@Override
 			public Model call() throws Exception {
 				return DNN.buildModel(23, 10, 45, new int[]{150, 10, 1});
-//				return WideDeepNN.buildModel(23, 10, 45, new int[]{1000, 100, 1}, wideSize);
 			}
 		});
 		for (int epoch = 0; epoch < 100 && !Context.finish; epoch++) {
@@ -75,63 +103,42 @@ public class CTR {
 
 	private static void loss_surface(Trainer trainer) throws IOException {
 		logger.info("compute loss surface");
-		Pair<TestDataSet.MatrixData, Boolean> d = TestDataSet.fromStream(test, Integer.parseInt(System.getProperty("batch", "100")));
-		Map<String, FloatMatrix> datas = Maps.newHashMap();
-		datas.put("E", d.getKey().getE());
-		datas.put("X", d.getKey().getX());
-		datas.put("W", MatrixUtil.hash(d.getKey().getE(), wideSize));
-		LossSurface lossSurface = new LossSurface(datas, d.getKey().getY(), new CrossEntropy(), trainer.getTrainResult());
+		Map<String, FloatMatrix> datas = testSet.next();
+		LossSurface lossSurface = new LossSurface(datas, datas.get("Y"), new CrossEntropy(), trainer.getTrainResult());
 		lossSurface.plot();
 		logger.info("loss surface draw finish");
-		test.close();
-		test = new BufferedReader(new FileReader(new File(System.getProperty("test",
-				CTR.class.getResource("").getPath()+"../../src/main/resources/test.txt"))));
+		testSet.reset();
 	}
 
 	private static void train(Trainer trainer) throws IOException {
-		boolean eof = false;
-		while (!Context.finish && !eof) {
+		while (trainSet.hasNext()) {
 			List<Map<String, FloatMatrix>> dataList = Lists.newArrayList();
 			for (int i=0; i<Context.thread; i++) {
-				Pair<TestDataSet.MatrixData, Boolean> d = TestDataSet.fromStream(train, Integer.parseInt(System.getProperty("batch", "10")));
-				if (!d.getValue()) {
+				Map<String, FloatMatrix> datas = trainSet.next();
+				if (datas == null || datas.isEmpty()) {
 					logger.info("data read eof");
-					eof = true;
 					break;
 				}
-				Map<String, FloatMatrix> datas = Maps.newHashMap();
-				datas.put("E", d.getKey().getE());
-				datas.put("X", d.getKey().getX());
-				datas.put("W", MatrixUtil.hash(d.getKey().getE(), wideSize));
-				datas.put("Y", d.getKey().getY());
 				dataList.add(datas);
 			}
 			trainer.train(dataList);
 		}
-		train.close();
-		train = new BufferedReader(new FileReader(new File(System.getProperty("train",
-				CTR.class.getResource("").getPath()+"../../src/main/resources/train.txt"))));
+		trainSet.reset();
 	}
 
 	private static void auc(Trainer trainer) throws IOException {
 		logger.info("begin compute auc...");
 		List<Pair<Double, Double>> data = new ArrayList<Pair<Double, Double>>();
-		boolean breakPredict = false;
-		while (!breakPredict) {
+		while (testSet.hasNext()) {
 			List<Map<String, FloatMatrix>> dataList = Lists.newArrayList();
 			List<FloatMatrix> y = Lists.newArrayList();
 			for (int i=0; i<Context.thread; i++) {
-				Pair<TestDataSet.MatrixData, Boolean> d = TestDataSet.fromStream(test, Integer.parseInt(System.getProperty("batch", "1000")));
-				if (!d.getValue()) {
-					logger.info("data read eof");
-					breakPredict = true;
+				Map<String, FloatMatrix> datas = testSet.next();
+				if (datas == null || datas.isEmpty()) {
+					logger.info("read data eof");
 					break;
 				}
-				Map<String, FloatMatrix> datas = Maps.newHashMap();
-				datas.put("E", d.getKey().getE());
-				datas.put("X", d.getKey().getX());
-				datas.put("W", MatrixUtil.hash(d.getKey().getE(), wideSize));
-				y.add(d.getKey().getY());
+				y.add(datas.get("Y"));
 				dataList.add(datas);
 			}
 			FloatMatrix[] ps = trainer.predict(dataList);
@@ -146,8 +153,6 @@ public class CTR {
 		}
 		AUC auc = new AUC(data);
 		logger.info("AUC {}", auc.calculate());
-		test.close();
-		test = new BufferedReader(new FileReader(new File(System.getProperty("test",
-				CTR.class.getResource("").getPath()+"../../src/main/resources/test.txt"))));
+		testSet.reset();
 	}
 }
