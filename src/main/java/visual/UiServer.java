@@ -1,15 +1,9 @@
 package visual;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import context.Context;
-import data.TestDataSet;
 import fi.iki.elonen.NanoHTTPD;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
@@ -21,12 +15,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 @Data
 public class UiServer extends NanoHTTPD implements UiServerGrpc.UiServer {
@@ -115,7 +106,7 @@ public class UiServer extends NanoHTTPD implements UiServerGrpc.UiServer {
 				result.put("graphs", ys.keySet());
 				return newFixedLengthResponse(objectMapper.writeValueAsString(result));
 			} else {
-				return newFixedLengthResponse(TestDataSet.readToString(UiServer.class.getResource("").getPath() + "../../../src/main/resources/web/index.html"));
+				return newFixedLengthResponse(readToString(UiServer.class.getResource("").getPath() + "../../../src/main/resources/web/index.html"));
 			}
 		} catch (Exception e) {
 			logger.error("http error", e);
@@ -145,5 +136,28 @@ public class UiServer extends NanoHTTPD implements UiServerGrpc.UiServer {
 		}
 		responseObserver.onNext(PlotMessage.newBuilder().build());
 		responseObserver.onCompleted();
+	}
+
+	public static String readToString(String fileName) {
+		String encoding = "UTF-8";
+		File file = new File(fileName);
+		Long filelength = file.length();
+		byte[] filecontent = new byte[filelength.intValue()];
+		try {
+			FileInputStream in = new FileInputStream(file);
+			in.read(filecontent);
+			in.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		try {
+			return new String(filecontent, encoding);
+		} catch (UnsupportedEncodingException e) {
+			System.err.println("The OS does not support " + encoding);
+			e.printStackTrace();
+			return null;
+		}
 	}
 }

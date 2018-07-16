@@ -14,6 +14,8 @@
 
     实现embdding+全链接模型和Wide And Deep模型
     
+    支持训练数据异步读取，自定义parser
+    
     UI Server可视化图表
     
 ## 例子
@@ -89,7 +91,17 @@
 
 - __data__
 
-    TestDataSet 从文件读取libsvm数据，该模块还没有封装，以后会做成队列，在训练期间异步填充
+    DataSet 数据集，next读取一批数据，hasNext查看是否还有数据，用户需要实现其parseFeature方法
+    
+    DataSet 可以异步多线程填充训练数据到数据队列中
+    
+    DataSource 数据来源，训练数据为文件的FileSource
+    
+    DataSource 为了支持多机训练，所以引入了step和offset概念，比如5个worker，每个worker的step都为5，第一个worker的offset为0，最后一个为4
+    
+    Parser 解析数据，把数据解析成一个Feature的列表，详细见LibsvmParser
+    
+    Feature 特征，idx为下标，值可以为string，int，float中的一种
 
 - __evaluate__
 
