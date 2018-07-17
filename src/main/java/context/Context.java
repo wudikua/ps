@@ -23,9 +23,6 @@ public class Context {
 
 	public static volatile boolean finish;
 
-	public static volatile boolean dump;
-
-
 	public static enum Mode {
 		STANDALONE, DISTRIBUTED
 	}
@@ -85,9 +82,6 @@ public class Context {
 		uiHost = System.getProperty("uiHost", "localhost");
 		try {
 			host = InetAddress.getLocalHost().getHostName();
-			if (host.indexOf(".momo.com") > 0) {
-				host = host.substring(0, host.indexOf(".momo.com"));
-			}
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		}
