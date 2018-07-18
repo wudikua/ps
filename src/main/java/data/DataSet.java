@@ -45,7 +45,7 @@ public abstract class DataSet implements Runnable {
 			return null;
 		}
 		try {
-			return queue.take();
+			return queue.poll(3, TimeUnit.SECONDS);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
@@ -60,7 +60,7 @@ public abstract class DataSet implements Runnable {
 	}
 
 	public void reset() {
-		executor.shutdown();
+		executor.shutdownNow();
 		queue.clear();
 		source.reset();
 		eof = false;
