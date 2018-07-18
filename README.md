@@ -25,6 +25,8 @@
     运行 Mnist.java 手写输入例子，正确率在0.92左右。如果从网上下载全量的mnist数据，正确率在0.98左右
     
     注意，根据运行的cpu core数量不同，结果略有差异，需要略微调整mini batch数量尽快收敛
+    
+    Jblas linux需要安装libgfortran3
 
 ## 架构
 
