@@ -5,6 +5,7 @@ import activations.Activation;
 import lombok.Data;
 import org.jblas.FloatMatrix;
 import store.KVStore;
+import util.MatrixUtil;
 
 import java.util.concurrent.Callable;
 
@@ -58,7 +59,8 @@ public class Conv2DLayer extends Layer {
 		this.initW = new Callable<FloatMatrix>() {
 			@Override
 			public FloatMatrix call() throws Exception {
-				return FloatMatrix.rand(K, inputD * kernelSize * kernelSize);
+				final float xavier = (float) (4 * (Math.sqrt(6) / Math.sqrt(K + inputD * kernelSize * kernelSize)));
+				return MatrixUtil.rand(K, inputD * kernelSize * kernelSize, xavier);
 			}
 		};
 		this.initB = new Callable<FloatMatrix>() {

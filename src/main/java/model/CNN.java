@@ -34,10 +34,10 @@ public class CNN extends FullConnectedNN {
 		List<Layer> inputs = Lists.newArrayList();
 		// 输入层
 		Layer numberFeatureLayer = new InputLayer("number", 0, inputD * inputW * inputH).setIsInput(true);
-		Conv2DLayer conv1 = new Conv2DLayer("conv1", inputW, inputH, inputD, 3, 1, 1);
+		Conv2DLayer conv1 = new Conv2DLayer("conv1", inputW, inputH, inputD, 3, 1, 10);
 		conv1.setActivation(new Relu());
 		PoolingLayer pool1 = new PoolingLayer("pool1", conv1.getOutputW(), conv1.getOutputH(), conv1.getK(), 2, 2);
-		Conv2DLayer conv2 = new Conv2DLayer("conv2", pool1.getOutputW(), pool1.getOutputH(), pool1.getK(), 3, 1, 1);
+		Conv2DLayer conv2 = new Conv2DLayer("conv2", pool1.getOutputW(), pool1.getOutputH(), pool1.getK(), 3, 1, 10);
 		conv2.setActivation(new Relu());
 		PoolingLayer pool2 = new PoolingLayer("pool2", conv2.getOutputW(), conv2.getOutputH(), conv2.getK(), 2, 2);
 		// 全连接
