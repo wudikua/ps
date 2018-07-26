@@ -2,10 +2,12 @@ package layer;
 
 
 import activations.Activation;
+import context.Context;
 import lombok.Data;
 import org.jblas.FloatMatrix;
 import store.KVStore;
 import util.MatrixUtil;
+import visual.UiClient;
 
 import java.util.concurrent.Callable;
 
@@ -152,6 +154,10 @@ public class Conv2DLayer extends Layer {
 		}
 		// c, w' * h' * N 转换为 c * w' * h', N的矩阵
 		this.A = reshapeForward(this.A, N);
+
+		if (Context.isTraining() && Context.isReportUi()) {
+			UiClient.ins().plot(name + ".weights.mean", weights.mean(), Context.step.get());
+		}
 		return this.A;
 	}
 
@@ -225,7 +231,7 @@ public class Conv2DLayer extends Layer {
 	}
 
 	public void pullWeights() {
-		weights = kvStore.get(name+".weighs", initW);
+		weights = kvStore.get(name+".weights", initW);
 		bias = kvStore.get(name+".bias", initB);
 	}
 }

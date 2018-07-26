@@ -76,9 +76,9 @@ public class CnnMnist extends DataSet {
 			System.exit(0);
 		}
 		trainSet = new CnnMnist(new MnistParser(), new FileSource(new File(System.getProperty("train",
-				CnnMnist.class.getResource("").getPath()+"../../src/main/resources/mnist_train.csv"))), 1000, 1);
+				CnnMnist.class.getResource("").getPath()+"../../src/main/resources/mnist_train.csv"))), 100, 1);
 		testSet = new CnnMnist(new MnistParser(), new FileSource(new File(System.getProperty("test",
-				CnnMnist.class.getResource("").getPath()+"../../src/main/resources/mnist_test.csv"))), 1000, 1);
+				CnnMnist.class.getResource("").getPath()+"../../src/main/resources/mnist_test.csv"))), 100, 1);
 		Trainer trainer = new Trainer(Context.thread, new Callable<Model>() {
 			@Override
 			public Model call() throws Exception {

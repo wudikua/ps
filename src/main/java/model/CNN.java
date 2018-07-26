@@ -34,12 +34,16 @@ public class CNN extends FullConnectedNN {
 		List<Layer> inputs = Lists.newArrayList();
 		// 输入层
 		Layer numberFeatureLayer = new InputLayer("number", 0, inputD * inputW * inputH).setIsInput(true);
-		Conv2DLayer conv1 = new Conv2DLayer("conv1", inputW, inputH, inputD, 3, 1, 10);
+		Conv2DLayer conv1 = new Conv2DLayer("conv1", inputW, inputH, inputD, 5, 1, 15);
 		conv1.setActivation(new Relu());
+		logger.info("conv1 {} * {}", conv1.getOutputW(), conv1.getOutputH());
 		PoolingLayer pool1 = new PoolingLayer("pool1", conv1.getOutputW(), conv1.getOutputH(), conv1.getK(), 2, 2);
-		Conv2DLayer conv2 = new Conv2DLayer("conv2", pool1.getOutputW(), pool1.getOutputH(), pool1.getK(), 3, 1, 10);
+		logger.info("pool1 {} * {}", pool1.getOutputW(), pool1.getOutputH());
+		Conv2DLayer conv2 = new Conv2DLayer("conv2", pool1.getOutputW(), pool1.getOutputH(), pool1.getK(), 3, 1, 15);
 		conv2.setActivation(new Relu());
+		logger.info("conv2 {} * {}", conv2.getOutputW(), conv2.getOutputH());
 		PoolingLayer pool2 = new PoolingLayer("pool2", conv2.getOutputW(), conv2.getOutputH(), conv2.getK(), 2, 2);
+		logger.info("pool2 {} * {}", pool2.getOutputW(), pool2.getOutputH());
 		// 全连接
 		List<Layer> fcLayers = FcLayer.build(pool2.getOutputDims(), fcLayerDims);
 		((FcLayer)fcLayers.get(fcLayers.size() - 1)).setActivation(new Softmax());
