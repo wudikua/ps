@@ -4,17 +4,21 @@
 
     使用java实现的dnn训练框架，底层矩阵库使用Jblas(https://github.com/mikiobraun/jblas)，参数服务器使用Grpc+protobuf，ui方面使用ploty.js+nanohttpd
 
-    支持单机多CPU
+    支持单机多CPU训练
 
-    支持分布式，多worker，多ps自定义负载均衡
+    支持分布式训练，多worker，多ps自定义负载均衡
     
     支持同步更新和异步更新
     
     支持二分类和多分类
 
-    实现embdding+全链接模型和Wide And Deep模型
+    实现embdding+全链接模型
     
-    支持训练数据异步读取，自定义parser
+    实现Wide And Deep模型
+    
+    实现卷积+池化+全链接模型
+    
+    支持训练数据，测试数据异步读取，自定义parser
     
     UI Server可视化图表
     
@@ -23,6 +27,8 @@
     运行 CTR.java 点击率预估例子，test auc在0.71左右
     
     运行 Mnist.java 手写输入例子，正确率在0.92左右。如果从网上下载全量的mnist数据，正确率在0.98左右
+    
+    运行 CnnMnist.java 使用Cnn实现的手写输入识别
     
     注意，根据运行的cpu core数量不同，结果略有差异，需要略微调整mini batch数量尽快收敛
     
@@ -140,7 +146,15 @@
 - __FcLayer__
 
     全链接网络，正向为A=activation(WX+B)
+    
+- __Conv2DLayer__
 
+    卷积层，实现im2col和col2im，输入数据按照通“道，行，列”的优先级存储为矩阵中的行
+
+- __PoolingLayer__
+
+    池化层，实现了max pooling，没有增加w和b，通过index map辅助存储max位置
+    
 - __loss__
 
     计算损失，forward接口计算损失值，backward计算损失函数导数
