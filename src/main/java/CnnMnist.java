@@ -65,6 +65,7 @@ public class CnnMnist extends DataSet {
 
 	public static void main(String args[]) throws Exception {
 		Context.init();
+		Context.thread = 1;
 		if (Context.isPServer()) {
 			// 启动PS进程
 			Updater updater = new AdamUpdater(0.005, 0.9, 0.999, Math.pow(10, -8));

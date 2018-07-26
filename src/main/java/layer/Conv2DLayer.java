@@ -49,7 +49,10 @@ public class Conv2DLayer extends Layer {
 
 	protected KVStore kvStore = KVStore.ins();
 
-	public Conv2DLayer(String name, int inputW, int inputH, int inputD, int kernelSize, int stride, int outputNum) {
+	public Conv2DLayer(String name, int inputW, int inputH, int inputD, int kernelSize, int stride, int outputNum, int padding) {
+		if (inputW < 0 || inputH < 0 || inputD < 0) {
+			throw new RuntimeException("input less 0 " + inputW + " " + inputH + " " + inputD);
+		}
 		this.name = name;
 		this.inputW = inputW;
 		this.inputH = inputH;
@@ -57,6 +60,7 @@ public class Conv2DLayer extends Layer {
 		this.K = outputNum;
 		this.stride = stride;
 		this.kernelSize = kernelSize;
+		this.padding = padding;
 
 		this.initW = new Callable<FloatMatrix>() {
 			@Override
@@ -181,7 +185,8 @@ public class Conv2DLayer extends Layer {
 	public FloatMatrix col2im(FloatMatrix A, int N) {
 		int W = getOutputW();
 		int H = getOutputH();
-		float[][] img = new float[inputD * inputW * inputH][N];
+		int imRowLength = inputD * inputW * inputH;
+		float[][] img = new float[imRowLength][N];
 		// 通道
 		for (int d=0; d<inputD; d++) {
 			for (int i=0; i<W; i++) {
@@ -197,6 +202,10 @@ public class Conv2DLayer extends Layer {
 								int depthOffset = d * inputW * inputH;
 								int rowOffset = stride * i + ki - padding;
 								int colOffset = stride * j + kj - padding;
+								int imRow = depthOffset + rowOffset * inputH + colOffset;
+								if (imRow < 0 || imRow >= imRowLength) {
+									continue;
+								}
 								img[depthOffset + rowOffset * inputH + colOffset][sample] += delta;
 							}
 						}

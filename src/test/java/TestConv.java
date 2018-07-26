@@ -20,7 +20,7 @@ public class TestConv {
 			}
 		}
 		System.out.println("origin " + MatrixUtil.pretty(f));
-		Conv2DLayer conv = new Conv2DLayer("conv", 3, 3, 1, 2, 1, 2);
+		Conv2DLayer conv = new Conv2DLayer("conv", 3, 3, 1, 2, 1, 2, 0 );
 		conv.setPadding(0);
 		FloatMatrix r = conv.im2col(f);
 		System.out.println("img col " + MatrixUtil.pretty(r));
@@ -39,7 +39,7 @@ public class TestConv {
 			}
 		}
 		System.out.println("origin " + MatrixUtil.pretty(f));
-		Conv2DLayer conv = new Conv2DLayer("conv", 3, 3, 1, 2, 1, 2);
+		Conv2DLayer conv = new Conv2DLayer("conv", 3, 3, 1, 2, 1, 2, 0);
 		conv.setPadding(0);
 		FloatMatrix r = conv.im2col(f);
 		System.out.println("img col " + MatrixUtil.pretty(r));
@@ -63,7 +63,7 @@ public class TestConv {
 			}
 		}
 		System.out.println("origin " + MatrixUtil.pretty(f));
-		Conv2DLayer conv = new Conv2DLayer("conv", 28, 28, 1, 3, 1, 1);
+		Conv2DLayer conv = new Conv2DLayer("conv", 28, 28, 1, 3, 1, 1, 0);
 		conv.setActivation(new Relu());
 		conv.setPadding(0);
 		System.out.println("conv output "+ conv.getOutputW() + " "+conv.getOutputH());

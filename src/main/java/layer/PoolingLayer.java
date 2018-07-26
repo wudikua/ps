@@ -89,9 +89,9 @@ public class PoolingLayer extends Layer {
 							}
 						}
 						int max = max(list);
-						img[d * inputD + i * W + j][sample] = list[max];
+						img[d * (W * H) + i * W + j][sample] = list[max];
 						// 标记max在原图中的位置
-						index.put(sample, new ImmutablePair<>(d * inputD + i * W + j, idx[max]));
+						index.put(sample, new ImmutablePair<>(d * (W * H) + i * W + j, idx[max]));
 					}
 				}
 			}
