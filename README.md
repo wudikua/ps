@@ -28,7 +28,7 @@
     
     运行 Mnist.java 手写输入例子，正确率在0.92左右。如果从网上下载全量的mnist数据，正确率在0.98左右
     
-    运行 CnnMnist.java 使用Cnn实现的手写输入识别，正确率可以做到0.96
+    运行 CnnMnist.java 使用Cnn实现的手写输入识别，对比Mnist.java的0.92同样的数据量可以做到0.96
     
     注意，根据运行的cpu core数量不同，结果略有差异，需要略微调整mini batch数量尽快收敛
     
@@ -227,6 +227,8 @@
     数据读取，libsvm文件的标准化读取，异步数据队列，HDFS支持等
     
     特征处理，参考sklearn中的Preprocessing
+    
+    更多的Layer实现，dropout，bn等
     
     参数传输的压缩，学习quantize相关paper
     
