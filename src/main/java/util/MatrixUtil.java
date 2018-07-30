@@ -32,28 +32,19 @@ public class MatrixUtil {
 		return result;
 	}
 
-	public static FloatMatrix randE(int row, int col) {
+	public static FloatMatrix randBernoulli(int row, int col, float p) {
 		float[][] result = new float[row][col];
-		int[] r = new int[]{0,1};
 		for (int i=0; i<row; i++) {
 			for (int j=0; j<col; j++) {
-				result[i][j] = r[j%2];
+				if (ThreadLocalRandom.current().nextFloat() < p) {
+					result[i][j] = 0;
+				} else {
+					result[i][j] = 1;
+				}
 			}
 		}
 		return new FloatMatrix(result);
 	}
-
-	public static FloatMatrix randY(int row, int col) {
-		float[][] result = new float[row][col];
-		int[] r = new int[]{0,1};
-		for (int i=0; i<row; i++) {
-			for (int j=0; j<col; j++) {
-				result[i][j] = r[j%2];
-			}
-		}
-		return new FloatMatrix(result);
-	}
-
 	public static FloatMatrix rand(int row, int col) {
 		float[][] result = new float[row][col];
 		for (int i=0; i<row; i++) {
